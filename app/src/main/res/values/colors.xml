@@ -7,4 +7,7 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <color name="nav_queue">#E27D60</color>
+    <color name="nav_songs">#41B3A3</color>
 </resources>
