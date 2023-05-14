@@ -313,6 +313,18 @@ class MediaPlaybackService : MediaBrowserServiceCompat(), OnErrorListener {
         return true
     }
 
+    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+        intent.action?.let {
+            when (it) {
+                "play" -> mediaSessionCallback.onPlay()
+                "pause" -> mediaSessionCallback.onPause()
+                "next" -> mediaSessionCallback.onSkipToNext()
+                "previous" -> mediaSessionCallback.onSkipToPrevious()
+            }
+        }
+        return super.onStartCommand(intent, flags, startId)
+    }
+
     private fun setMediaPlaybackState(state: Int, bundle: Bundle? = null) {
         val playbackPosition = mediaPlayer?.currentPosition?.toLong() ?: 0L
         val playbackSpeed = mediaPlayer?.playbackParams?.speed ?: 0f
