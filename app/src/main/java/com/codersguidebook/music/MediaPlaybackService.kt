@@ -1,6 +1,9 @@
 package com.codersguidebook.music
 
+import android.app.PendingIntent
 import android.content.*
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
@@ -15,14 +18,17 @@ import android.os.Looper
 import android.provider.MediaStore
 import android.service.media.MediaBrowserService
 import android.support.v4.media.MediaBrowserCompat
+import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.MediaSessionCompat.QueueItem
-import android.support.v4.media.session.PlaybackStateCompat
 import android.support.v4.media.session.PlaybackStateCompat.*
 import android.text.TextUtils
 import android.view.KeyEvent
 import android.widget.Toast
+import androidx.core.app.NotificationCompat
 import androidx.media.MediaBrowserServiceCompat
+import java.io.File
+import java.io.FileInputStream
 import java.io.IOException
 
 class MediaPlaybackService : MediaBrowserServiceCompat(), OnErrorListener {
@@ -42,6 +48,16 @@ class MediaPlaybackService : MediaBrowserServiceCompat(), OnErrorListener {
             }
             AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> mediaPlayer?.setVolume(0.3f, 0.3f)
             AUDIOFOCUS_GAIN -> mediaPlayer?.setVolume(1.0f, 1.0f)
+        }
+    }
+
+    private var playbackPositionRunnable = object : Runnable {
+        override fun run() {
+            try {
+                if (mediaPlayer?.isPlaying == true) setMediaPlaybackState(STATE_PLAYING)
+            } finally {
+                handler.postDelayed(this, 1000L)
+            }
         }
     }
 
@@ -286,6 +302,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat(), OnErrorListener {
 
         val filter = IntentFilter(ACTION_AUDIO_BECOMING_NOISY)
         registerReceiver(noisyReceiver, filter)
+        playbackPositionRunnable.run()
     }
 
     override fun onError(mp: MediaPlayer?, what: Int, extra: Int): Boolean {
@@ -313,9 +330,104 @@ class MediaPlaybackService : MediaBrowserServiceCompat(), OnErrorListener {
         }
     }
 
-    override fun onGetRoot(clientPackageName: String, clientUid: Int, rootHints: Bundle?): MediaBrowserService.BrowserRoot? {
+    private fun setCurrentMetadata() {
+        val currentQueueItem = getCurrentQueueItem() ?: return
+        val currentQueueItemDescription = currentQueueItem.description
+        val metadataBuilder= MediaMetadataCompat.Builder().apply {
+            putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, currentQueueItemDescription.mediaId)
+            putString(MediaMetadataCompat.METADATA_KEY_TITLE, currentQueueItemDescription.title.toString())
+            putString(MediaMetadataCompat.METADATA_KEY_ARTIST, currentQueueItemDescription.subtitle.toString())
+            val extras = currentQueueItemDescription.extras
+            val albumName = extras?.getString("album") ?: "Unknown album"
+            putString(MediaMetadataCompat.METADATA_KEY_ALBUM, albumName)
+            val albumId = extras?.getString("album_id")
+            putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, getArtworkByAlbumId(albumId))
+            putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, albumId)
+        }
+        mediaSessionCompat.setMetadata(metadataBuilder.build())
+    }
+
+    private fun getArtworkByAlbumId(albumId: String?): Bitmap {
+        albumId?.let {
+            try {
+                val directory = ContextWrapper(applicationContext).getDir("albumArt", Context.MODE_PRIVATE)
+                val imageFile = File(directory, "$albumId.jpg")
+                if (imageFile.exists()) {
+                    return BitmapFactory.decodeStream(FileInputStream(imageFile))
+                }
+            } catch (_: Exception) { }
+        }
+        // If an error has occurred or the album ID is null, then return a default artwork image
+        return BitmapFactory.decodeResource(applicationContext.resources, R.drawable.ic_launcher_foreground)
+    }
+
+    private fun refreshNotification() {
+        val isPlaying = mediaPlayer?.isPlaying ?: false
+        val playPauseIntent = if (isPlaying) {
+            Intent(applicationContext, MediaPlaybackService::class.java).setAction("pause")
+        } else Intent(applicationContext, MediaPlaybackService::class.java).setAction("play")
+        val nextIntent = Intent(applicationContext, MediaPlaybackService::class.java).setAction("next")
+        val prevIntent = Intent(applicationContext, MediaPlaybackService::class.java).setAction("previous")
+
+        val intent = packageManager
+            .getLaunchIntentForPackage(packageName)
+            ?.setPackage(null)
+            ?.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
+        val activityIntent = PendingIntent.getActivity(applicationContext, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+
+        val builder = NotificationCompat.Builder(applicationContext, channelId).apply {
+            val mediaMetadata = mediaSessionCompat.controller.metadata
+
+            // Previous button
+            addAction(
+                NotificationCompat.Action(R.drawable.ic_back, getString(R.string.play_prev),
+                    PendingIntent.getService(applicationContext, 0, prevIntent, PendingIntent.FLAG_IMMUTABLE)
+                )
+            )
+
+            // Play/pause button
+            val playOrPause = if (isPlaying) R.drawable.ic_pause
+            else R.drawable.ic_play
+            addAction(
+                NotificationCompat.Action(playOrPause, getString(R.string.play_pause),
+                    PendingIntent.getService(applicationContext, 0, playPauseIntent, PendingIntent.FLAG_IMMUTABLE)
+                )
+            )
+
+            // Next button
+            addAction(
+                NotificationCompat.Action(R.drawable.ic_next, getString(R.string.play_next),
+                    PendingIntent.getService(applicationContext, 0, nextIntent, PendingIntent.FLAG_IMMUTABLE)
+                )
+            )
+
+            setStyle(androidx.media.app.NotificationCompat.MediaStyle()
+                .setShowActionsInCompactView(0, 1, 2)
+                .setMediaSession(mediaSessionCompat.sessionToken)
+            )
+
+            val smallIcon = if (isPlaying) R.drawable.play
+            else R.drawable.pause
+            setSmallIcon(smallIcon)
+
+            setContentIntent(activityIntent)
+
+            // Add the metadata for the currently playing track
+            setContentTitle(mediaMetadata.getString(MediaMetadataCompat.METADATA_KEY_TITLE))
+            setContentText(mediaMetadata.getString(MediaMetadataCompat.METADATA_KEY_ARTIST))
+            setLargeIcon(mediaMetadata.getBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART))
+
+            // Make the transport controls visible on the lockscreen
+            setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            priority = NotificationCompat.PRIORITY_DEFAULT
+        }
+        // Display the notification and place the service in the foreground
+        startForeground(1, builder.build())
+    }
+
+    override fun onGetRoot(clientPackageName: String, clientUid: Int, rootHints: Bundle?): BrowserRoot? {
         return if (TextUtils.equals(clientPackageName, packageName)) {
-            MediaBrowserService.BrowserRoot(getString(R.string.app_name), null)
+            BrowserRoot(getString(R.string.app_name), null)
         } else null
     }
 
