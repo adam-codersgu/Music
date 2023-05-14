@@ -3,6 +3,7 @@ package com.codersguidebook.music
 import android.content.*
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.media.AudioManager.*
 import android.media.MediaPlayer
 import android.media.MediaPlayer.*
@@ -10,6 +11,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
+import android.service.media.MediaBrowserService
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.MediaSessionCompat.QueueItem
@@ -18,6 +20,8 @@ import android.support.v4.media.session.PlaybackStateCompat.*
 import android.text.TextUtils
 import android.view.KeyEvent
 import android.widget.Toast
+import androidx.core.app.ServiceCompat.stopForeground
+import androidx.core.content.ContextCompat.registerReceiver
 import androidx.media.MediaBrowserServiceCompat
 import java.io.IOException
 
@@ -31,6 +35,16 @@ class MediaPlaybackService : MediaBrowserServiceCompat(), OnErrorListener {
     private val playQueue: MutableList<QueueItem> = mutableListOf()
     private lateinit var audioFocusRequest: AudioFocusRequest
     private lateinit var mediaSessionCompat: MediaSessionCompat
+
+    private val afChangeListener = OnAudioFocusChangeListener { focusChange ->
+        when (focusChange) {
+            AUDIOFOCUS_LOSS, AUDIOFOCUS_LOSS_TRANSIENT -> {
+                mediaSessionCompat.controller.transportControls.pause()
+            }
+            AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> mediaPlayer?.setVolume(0.3f, 0.3f)
+            AUDIOFOCUS_GAIN -> mediaPlayer?.setVolume(1.0f, 1.0f)
+        }
+    }
 
     private val mediaSessionCallback: MediaSessionCompat.Callback = object : MediaSessionCompat.Callback() {
         override fun onMediaButtonEvent(mediaButtonEvent: Intent?): Boolean {
@@ -101,6 +115,65 @@ class MediaPlaybackService : MediaBrowserServiceCompat(), OnErrorListener {
                 onError(mediaPlayer, MEDIA_ERROR_UNKNOWN, MEDIA_ERROR_MALFORMED)
             }
         }
+
+        override fun onPlay() {
+            super.onPlay()
+
+            try {
+                if (mediaPlayer != null && !mediaPlayer!!.isPlaying) {
+                    val audioManager = applicationContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+
+                    audioFocusRequest = AudioFocusRequest.Builder(AUDIOFOCUS_GAIN).run {
+                        setAudioAttributes(AudioAttributes.Builder().run {
+                            setOnAudioFocusChangeListener(afChangeListener)
+                            setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                            build()
+                        })
+                        build()
+                    }
+
+                    val audioFocusRequestOutcome = audioManager.requestAudioFocus(audioFocusRequest)
+                    if (audioFocusRequestOutcome == AUDIOFOCUS_REQUEST_GRANTED) {
+                        startService(Intent(applicationContext, MediaBrowserService::class.java))
+                        mediaSessionCompat.isActive = true
+                        try {
+                            mediaPlayer?.apply {
+                                start()
+
+                                setOnCompletionListener {
+                                    setMediaPlaybackState(STATE_SKIPPING_TO_NEXT)
+
+                                    val repeatMode = mediaSessionCompat.controller.repeatMode
+                                    when {
+                                        repeatMode == REPEAT_MODE_ONE -> {}
+                                        repeatMode == REPEAT_MODE_ALL ||
+                                                playQueue.isNotEmpty() &&
+                                                playQueue[playQueue.size - 1].queueId
+                                                != currentlyPlayingQueueItemId -> {
+                                            onSkipToNext()
+                                            return@setOnCompletionListener
+                                        }
+                                        else -> {
+                                            onStop()
+                                            return@setOnCompletionListener
+                                        }
+                                    }
+
+                                    onPrepare()
+                                    onPlay()
+                                }
+                            }
+                            refreshNotification()
+                            setMediaPlaybackState(STATE_PLAYING, getBundleWithSongDuration())
+                        } catch (_: NullPointerException) {
+                            onError(mediaPlayer, MEDIA_ERROR_UNKNOWN, 0)
+                        }
+                    }
+                }
+            } catch (_: IllegalStateException) {
+                onError(mediaPlayer, MEDIA_ERROR_UNKNOWN, MEDIA_ERROR_IO)
+            }
+        }
     }
 
     private val noisyReceiver = object : BroadcastReceiver() {
@@ -130,6 +203,23 @@ class MediaPlaybackService : MediaBrowserServiceCompat(), OnErrorListener {
         stopForeground(STOP_FOREGROUND_REMOVE)
         Toast.makeText(application, getString(R.string.error), Toast.LENGTH_LONG).show()
         return true
+    }
+
+    private fun setMediaPlaybackState(state: Int, bundle: Bundle? = null) {
+        val playbackPosition = mediaPlayer?.currentPosition?.toLong() ?: 0L
+        val playbackSpeed = mediaPlayer?.playbackParams?.speed ?: 0f
+        val playbackStateBuilder = Builder()
+            .setState(state, playbackPosition, playbackSpeed)
+            .setActiveQueueItemId(currentlyPlayingQueueItemId)
+        bundle?.let { playbackStateBuilder.setExtras(it) }
+        mediaSessionCompat.setPlaybackState(playbackStateBuilder.build())
+    }
+
+    private fun getBundleWithSongDuration(): Bundle {
+        val playbackDuration = mediaPlayer?.duration ?: 0
+        return Bundle().apply {
+            putInt("duration", playbackDuration)
+        }
     }
 
     override fun onGetRoot(clientPackageName: String, clientUid: Int, rootHints: Bundle?): BrowserRoot? {
