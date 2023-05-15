@@ -1,22 +1,51 @@
 package com.codersguidebook.music
 
+import android.content.ComponentName
+import android.content.SharedPreferences
 import android.os.Bundle
+import android.support.v4.media.MediaBrowserCompat
+import android.support.v4.media.session.MediaControllerCompat
+import android.support.v4.media.session.MediaSessionCompat.QueueItem
 import android.view.Menu
-import com.google.android.material.snackbar.Snackbar
-import com.google.android.material.navigation.NavigationView
+import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
-import androidx.drawerlayout.widget.DrawerLayout
-import androidx.appcompat.app.AppCompatActivity
 import com.codersguidebook.music.databinding.ActivityMainBinding
+import com.google.android.material.navigation.NavigationView
+import com.google.android.material.snackbar.Snackbar
+import androidx.preference.PreferenceManager
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
+
+    private var currentPlaybackPosition = 0
+    private var currentPlaybackDuration = 0
+    private var currentQueueItemId = -1L
+    private var playQueue = listOf<QueueItem>()
+    private val playQueueViewModel: PlayQueueViewModel by viewModels()
+    private lateinit var mediaBrowser: MediaBrowserCompat
+    private lateinit var sharedPreferences: SharedPreferences
+
+    private val connectionCallbacks = object : MediaBrowserCompat.ConnectionCallback() {
+        override fun onConnected() {
+            super.onConnected()
+
+            mediaBrowser.sessionToken.also { token ->
+                val mediaControllerCompat = MediaControllerCompat(this@MainActivity, token)
+                MediaControllerCompat.setMediaController(this@MainActivity, mediaControllerCompat)
+            }
+
+            MediaControllerCompat.getMediaController(this@MainActivity)
+                .registerCallback(controllerCallback)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,6 +71,15 @@ class MainActivity : AppCompatActivity() {
         )
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
+
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+        mediaBrowser = MediaBrowserCompat(
+            this,
+            ComponentName(this, MediaPlaybackService::class.java),
+            connectionCallbacks,
+            intent.extras
+        )
+        mediaBrowser.connect()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
