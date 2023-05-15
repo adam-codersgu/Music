@@ -26,6 +26,7 @@ import android.text.TextUtils
 import android.view.KeyEvent
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.media.MediaBrowserServiceCompat
 import java.io.File
 import java.io.FileInputStream
@@ -323,6 +324,21 @@ class MediaPlaybackService : MediaBrowserServiceCompat(), OnErrorListener {
             }
         }
         return super.onStartCommand(intent, flags, startId)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        mediaSessionCompat.controller.transportControls.stop()
+        handler.removeCallbacks(playbackPositionRunnable)
+        unregisterReceiver(noisyReceiver)
+        mediaSessionCompat.release()
+        NotificationManagerCompat.from(this).cancel(1)
+    }
+
+    private fun getCurrentQueueItem(): QueueItem? {
+        return playQueue.find {
+            it.queueId == currentlyPlayingQueueItemId
+        }
     }
 
     private fun setMediaPlaybackState(state: Int, bundle: Bundle? = null) {
