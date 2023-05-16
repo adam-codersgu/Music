@@ -1,11 +1,17 @@
 package com.codersguidebook.music
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.ComponentName
+import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.support.v4.media.MediaBrowserCompat
+import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat.QueueItem
+import android.support.v4.media.session.PlaybackStateCompat
+import android.support.v4.media.session.PlaybackStateCompat.*
 import android.view.Menu
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -47,6 +53,51 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private val controllerCallback = object : MediaControllerCompat.Callback() {
+        override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
+            super.onPlaybackStateChanged(state)
+
+            // TODO: Refresh the play queue
+            refreshPlayQueue()
+            if (state?.activeQueueItemId != currentQueueItemId) {
+                currentQueueItemId = state?.activeQueueItemId ?: -1
+                savePlayQueueId(currentQueueItemId)
+            }
+
+            playQueueViewModel.playbackState.value = state?.state ?: PlaybackStateCompat.STATE_NONE
+            when (state?.state) {
+                STATE_PLAYING, STATE_PAUSED -> {
+                    currentPlaybackPosition = state.position.toInt()
+                    state.extras?.let {
+                        currentPlaybackDuration = it.getInt("duration", 0)
+                        playQueueViewModel.playbackDuration.value = currentPlaybackDuration
+                    }
+                    playQueueViewModel.playbackPosition.value = currentPlaybackPosition
+                }
+                STATE_STOPPED -> {
+                    currentPlaybackDuration = 0
+                    playQueueViewModel.playbackDuration.value = 0
+                    currentPlaybackPosition = 0
+                    playQueueViewModel.playbackPosition.value = 0
+                    playQueueViewModel.currentlyPlayingSongMetadata.value = null
+                }
+                STATE_ERROR -> refreshMusicLibrary()
+                else -> return
+            }
+        }
+
+        override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
+            super.onMetadataChanged(metadata)
+
+            if (metadata?.description?.mediaId !=
+                playQueueViewModel.currentlyPlayingSongMetadata.value?.description?.mediaId) {
+                playQueueViewModel.playbackPosition.value = 0
+            }
+
+            playQueueViewModel.currentlyPlayingSongMetadata.value = metadata
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -80,6 +131,8 @@ class MainActivity : AppCompatActivity() {
             intent.extras
         )
         mediaBrowser.connect()
+
+        createChannelForMediaPlayerNotification()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -91,5 +144,28 @@ class MainActivity : AppCompatActivity() {
     override fun onSupportNavigateUp(): Boolean {
         val navController = findNavController(R.id.nav_host_fragment_content_main)
         return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
+        MediaControllerCompat.getMediaController(this)?.apply {
+            transportControls.stop()
+            unregisterCallback(controllerCallback)
+        }
+        mediaBrowser.disconnect()
+    }
+
+    private fun createChannelForMediaPlayerNotification() {
+        val channel = NotificationChannel(
+            "music", "Notifications",
+            NotificationManager.IMPORTANCE_DEFAULT
+        ).apply {
+            description = "All app notifications"
+            setSound(null, null)
+            setShowBadge(false)
+        }
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(channel)
     }
 }
