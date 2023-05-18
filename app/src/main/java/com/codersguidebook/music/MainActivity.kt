@@ -7,15 +7,18 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.support.v4.media.MediaBrowserCompat
+import android.support.v4.media.MediaDescriptionCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat.QueueItem
 import android.support.v4.media.session.PlaybackStateCompat
 import android.support.v4.media.session.PlaybackStateCompat.*
 import android.view.Menu
+import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
@@ -25,6 +28,8 @@ import com.codersguidebook.music.databinding.ActivityMainBinding
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.snackbar.Snackbar
 import androidx.preference.PreferenceManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
@@ -167,5 +172,51 @@ class MainActivity : AppCompatActivity() {
         }
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.createNotificationChannel(channel)
+    }
+
+    fun playNewPlayQueue(songs: List<Song>, startIndex: Int = 0, shuffle: Boolean = false)
+            = lifecycleScope.launch(Dispatchers.Default) {
+        if (songs.isEmpty() || startIndex >= songs.size) {
+            Toast.makeText(this@MainActivity, getString(R.string.error), Toast.LENGTH_LONG).show()
+            return@launch
+        }
+        mediaController.transportControls.stop()
+
+        val startSongIndex = if (shuffle) (songs.indices).random()
+        else startIndex
+
+        val startSongDesc = buildMediaDescription(songs[startSongIndex], startSongIndex.toLong())
+
+        val mediaControllerCompat = MediaControllerCompat.getMediaController(this@MainActivity)
+        mediaControllerCompat.addQueueItem(startSongDesc)
+        skipToAndPlayQueueItem(startSongIndex.toLong())
+
+        for ((index, song) in songs.withIndex()) {
+            if (index == startSongIndex) continue
+            val songDesc = buildMediaDescription(song, index.toLong())
+            mediaControllerCompat.addQueueItem(songDesc, index)
+        }
+
+        when {
+            shuffle -> setShuffleMode(SHUFFLE_MODE_ALL)
+            mediaControllerCompat.shuffleMode == SHUFFLE_MODE_ALL -> setShuffleMode(SHUFFLE_MODE_NONE)
+        }
+    }
+
+    private fun buildMediaDescription(song: Song, queueId: Long? = null): MediaDescriptionCompat {
+        val extrasBundle = Bundle().apply {
+            putString("album", song.album)
+            putString("album_id", song.albumId)
+            queueId?.let {
+                putLong("queue_id", queueId)
+            }
+        }
+
+        return MediaDescriptionCompat.Builder()
+            .setExtras(extrasBundle)
+            .setMediaId(song.songId.toString())
+            .setSubtitle(song.artist)
+            .setTitle(song.title)
+            .build()
     }
 }
