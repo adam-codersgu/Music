@@ -18,6 +18,7 @@ import android.os.Looper
 import android.provider.MediaStore
 import android.service.media.MediaBrowserService
 import android.support.v4.media.MediaBrowserCompat
+import android.support.v4.media.MediaDescriptionCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.MediaSessionCompat.QueueItem
@@ -281,6 +282,35 @@ class MediaPlaybackService : MediaBrowserServiceCompat(), OnErrorListener {
                     setMediaPlaybackState(STATE_PLAYING, getBundleWithSongDuration())
                 } else setMediaPlaybackState(STATE_PAUSED, getBundleWithSongDuration())
             }
+        }
+
+        override fun onAddQueueItem(description: MediaDescriptionCompat?) {
+            onAddQueueItem(description, playQueue.size)
+        }
+
+        override fun onAddQueueItem(description: MediaDescriptionCompat?, index: Int) {
+            super.onAddQueueItem(description, index)
+
+            val sortedQueue = playQueue.sortedByDescending {
+                it.queueId
+            }
+            val presetQueueId = description?.extras?.getLong("queue_id")
+            val queueId = when {
+                presetQueueId != null && sortedQueue.find { it.queueId == presetQueueId } == null -> {
+                    presetQueueId
+                }
+                sortedQueue.isNotEmpty() -> sortedQueue[0].queueId + 1
+                else -> 0
+            }
+
+            val queueItem = QueueItem(description, queueId)
+            try {
+                playQueue.add(index, queueItem)
+            } catch (exception: IndexOutOfBoundsException) {
+                playQueue.add(playQueue.size, queueItem)
+            }
+
+            mediaSessionCompat.setQueue(playQueue)
         }
     }
 
