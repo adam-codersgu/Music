@@ -219,4 +219,22 @@ class MainActivity : AppCompatActivity() {
             .setTitle(song.title)
             .build()
     }
+
+    fun skipToAndPlayQueueItem(queueItemId: Long) {
+        mediaController.transportControls.skipToQueueItem(queueItemId)
+        mediaController.transportControls.play()
+    }
+
+    /* private fun setShuffleMode(shuffleMode: Int) {
+        sharedPreferences.edit().apply {
+            putInt(SHUFFLE_MODE, shuffleMode)
+            apply()
+        }
+
+        val bundle = Bundle().apply {
+            putInt(SHUFFLE_MODE, shuffleMode)
+        }
+
+        mediaController.sendCommand(SET_SHUFFLE_MODE, bundle, null)
+    } */
 }
