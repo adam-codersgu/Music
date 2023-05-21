@@ -225,16 +225,16 @@ class MainActivity : AppCompatActivity() {
         mediaController.transportControls.play()
     }
 
-    /* private fun setShuffleMode(shuffleMode: Int) {
+    private fun setShuffleMode(shuffleMode: Int) {
         sharedPreferences.edit().apply {
-            putInt(SHUFFLE_MODE, shuffleMode)
+            putInt("SHUFFLE_MODE", shuffleMode)
             apply()
         }
 
         val bundle = Bundle().apply {
-            putInt(SHUFFLE_MODE, shuffleMode)
+            putInt("SHUFFLE_MODE", shuffleMode)
         }
 
-        mediaController.sendCommand(SET_SHUFFLE_MODE, bundle, null)
-    } */
+        mediaController.sendCommand("SET_SHUFFLE_MODE", bundle, null)
+    }
 }
