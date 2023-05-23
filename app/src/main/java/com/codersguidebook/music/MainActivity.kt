@@ -63,13 +63,13 @@ class MainActivity : AppCompatActivity() {
             super.onPlaybackStateChanged(state)
 
             // TODO: Refresh the play queue
-            refreshPlayQueue()
+            /* refreshPlayQueue()
             if (state?.activeQueueItemId != currentQueueItemId) {
                 currentQueueItemId = state?.activeQueueItemId ?: -1
                 savePlayQueueId(currentQueueItemId)
-            }
+            } */
 
-            playQueueViewModel.playbackState.value = state?.state ?: PlaybackStateCompat.STATE_NONE
+            playQueueViewModel.playbackState.value = state?.state ?: STATE_NONE
             when (state?.state) {
                 STATE_PLAYING, STATE_PAUSED -> {
                     currentPlaybackPosition = state.position.toInt()

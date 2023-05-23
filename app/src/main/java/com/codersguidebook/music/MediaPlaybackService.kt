@@ -15,6 +15,7 @@ import android.media.session.PlaybackState.STATE_SKIPPING_TO_NEXT
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.ResultReceiver
 import android.provider.MediaStore
 import android.service.media.MediaBrowserService
 import android.support.v4.media.MediaBrowserCompat
@@ -311,6 +312,33 @@ class MediaPlaybackService : MediaBrowserServiceCompat(), OnErrorListener {
             }
 
             mediaSessionCompat.setQueue(playQueue)
+        }
+
+        override fun onCommand(command: String?, extras: Bundle?, cb: ResultReceiver?) {
+            super.onCommand(command, extras, cb)
+
+            when (command) {
+                // TODO: Define additional actions here
+
+                "SET_SHUFFLE_MODE" -> {
+                    extras?.let {
+                        val shuffleMode = extras.getInt("SHUFFLE_MODE", SHUFFLE_MODE_NONE)
+                        onSetShuffleMode(shuffleMode)
+
+                        if (shuffleMode == SHUFFLE_MODE_ALL) {
+                            getCurrentQueueItem()?.let { currentQueueItem ->
+                                playQueue.remove(currentQueueItem)
+                                playQueue.shuffle()
+                                playQueue.add(0, currentQueueItem)
+                            }
+                        } else {
+                            playQueue.sortBy { it.queueId }
+                        }
+
+                        setPlayQueue()
+                    }
+                }
+            }
         }
     }
 
