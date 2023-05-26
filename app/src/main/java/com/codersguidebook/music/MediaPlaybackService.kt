@@ -511,6 +511,11 @@ class MediaPlaybackService : MediaBrowserServiceCompat(), OnErrorListener {
         startForeground(1, builder.build())
     }
 
+    private fun setPlayQueue() {
+        mediaSessionCompat.setQueue(playQueue)
+        setMediaPlaybackState(mediaSessionCompat.controller.playbackState.state)
+    }
+
     override fun onGetRoot(clientPackageName: String, clientUid: Int, rootHints: Bundle?): BrowserRoot? {
         return if (TextUtils.equals(clientPackageName, packageName)) {
             BrowserRoot(getString(R.string.app_name), null)
