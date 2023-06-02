@@ -1,9 +1,11 @@
 package com.codersguidebook.music
 
+import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.ComponentName
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.support.v4.media.MediaBrowserCompat
@@ -14,6 +16,7 @@ import android.support.v4.media.session.MediaSessionCompat.QueueItem
 import android.support.v4.media.session.PlaybackStateCompat
 import android.support.v4.media.session.PlaybackStateCompat.*
 import android.view.Menu
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -30,8 +33,12 @@ import com.codersguidebook.music.databinding.ActivityMainBinding
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.snackbar.Snackbar
 import androidx.preference.PreferenceManager
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
+import com.bumptech.glide.signature.ObjectKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.io.File
 
 class MainActivity : AppCompatActivity() {
 
@@ -249,5 +256,21 @@ class MainActivity : AppCompatActivity() {
         }
 
         mediaController.sendCommand("SET_SHUFFLE_MODE", bundle, null)
+    }
+
+    fun loadArtwork(albumId: String?, view: ImageView) {
+        var file: File? = null
+        if (albumId != null) {
+            val directory = ContextWrapper(application).getDir("albumArt", Context.MODE_PRIVATE)
+            file = File(directory, "$albumId.jpg")
+        }
+
+        Glide.with(application)
+            .load(file ?: R.drawable.ic_launcher_foreground)
+            .transition(DrawableTransitionOptions.withCrossFade())
+            .centerCrop()
+            .signature(ObjectKey(file?.path + file?.lastModified()))
+            .override(600, 600)
+            .into(view)
     }
 }
