@@ -60,4 +60,41 @@ class SongsAdapter(private val activity: MainActivity):
     }
 
     override fun getItemCount() = songs.size
+
+    fun processNewSongs(newSongs: List<Song>) {
+        for ((index, song) in newSongs.withIndex()) {
+            when {
+                index >= songs.size -> {
+                    songs.add(song)
+                    notifyItemInserted(index)
+                }
+                song.songId != songs[index].songId -> {
+                    // Check if the song is a new entry to the list
+                    val songIsNewEntry = songs.find { it.songId == song.songId } == null
+                    if (songIsNewEntry) {
+                        songs.add(index, song)
+                        notifyItemInserted(index)
+                        continue
+                    }
+
+                    // Check if the song has been removed from the list
+                    val songIsRemoved = newSongs.find { it.songId == songs[index].songId } == null
+                    if (songIsRemoved) {
+                        songs.removeAt(index)
+                        notifyItemRemoved(index)
+                    }
+                }
+                song != songs[index] -> {
+                    songs[index] = song
+                    notifyItemChanged(index)
+                }
+            }
+        }
+
+        if (songs.size > newSongs.size) {
+            val numberItemsToRemove = songs.size - newSongs.size
+            repeat(numberItemsToRemove) { songs.removeLast() }
+            notifyItemRangeRemoved(newSongs.size, numberItemsToRemove)
+        }
+    }
 }

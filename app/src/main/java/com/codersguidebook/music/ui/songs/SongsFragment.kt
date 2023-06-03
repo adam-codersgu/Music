@@ -18,6 +18,8 @@ class SongsFragment : Fragment() {
 
     private var _binding: FragmentSongsBinding? = null
     private val binding get() = _binding!!
+    private var isUpdating = false
+    private var unhandledRequestReceived = false
     private lateinit var adapter: SongsAdapter
     private lateinit var musicViewModel: MusicViewModel
     private lateinit var mainActivity: MainActivity
@@ -40,7 +42,9 @@ class SongsFragment : Fragment() {
 
         binding.scrollbar.recyclerView = binding.recyclerView
 
-        // TODO: Initialise the SongsAdapter class here
+        adapter = SongsAdapter(mainActivity)
+        binding.recyclerView.adapter = adapter
+        adapter.stateRestorationPolicy = RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY
 
         musicViewModel.allSongs.observe(viewLifecycleOwner) {
             updateRecyclerView(it)
@@ -57,27 +61,33 @@ class SongsFragment : Fragment() {
         })
     }
 
+    private fun updateRecyclerView(songs: List<Song>) {
+        if (isUpdating) {
+            unhandledRequestReceived = true
+            return
+        }
+        isUpdating = true
+
+        binding.fab.setOnClickListener {
+            mainActivity.playNewPlayQueue(songs, shuffle = true)
+        }
+
+        if (adapter.songs.isEmpty()) {
+            adapter.songs.addAll(songs)
+            adapter.notifyItemRangeInserted(0, songs.size)
+        } else {
+            adapter.processNewSongs(songs)
+        }
+
+        isUpdating = false
+        if (unhandledRequestReceived) {
+            unhandledRequestReceived = false
+            musicViewModel.allSongs.value?.let { updateRecyclerView(it) }
+        }
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
-    }
-
-    OUTTAKE
-
-    Also, the onViewCreated method attaches an onClick listener to the floating action button from the fragment_songs layout. If the user clicks the button, then the MainActivity class’s playNewSongs method will play the user’s entire music library on shuffle.
-
-
-    // Shuffle the music library then play it
-    binding.fab.setOnClickListener {
-        mainActivity.playNewSongs(completeLibrary, 0, true)
-    }
-
-    private fun initialiseAdapter() {
-        adapter = SongsAdapter(mainActivity)
-        adapter.stateRestorationPolicy = RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY
-    }
-
-    private fun requestNewData() {
-        musicLibraryViewModel.allSongs.value?.let { updateRecyclerView(it) }
     }
 }
