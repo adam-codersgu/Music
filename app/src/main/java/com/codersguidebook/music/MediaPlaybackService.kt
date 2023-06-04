@@ -318,8 +318,6 @@ class MediaPlaybackService : MediaBrowserServiceCompat(), OnErrorListener {
             super.onCommand(command, extras, cb)
 
             when (command) {
-                // TODO: Define additional actions here
-
                 "SET_SHUFFLE_MODE" -> {
                     extras?.let {
                         val shuffleMode = extras.getInt("SHUFFLE_MODE", SHUFFLE_MODE_NONE)
@@ -335,6 +333,40 @@ class MediaPlaybackService : MediaBrowserServiceCompat(), OnErrorListener {
                             playQueue.sortBy { it.queueId }
                         }
 
+                        setPlayQueue()
+                    }
+                }
+
+                "UPDATE_QUEUE_ITEM" -> {
+                    extras?.let {
+                        val queueItemId = it.getLong("queue_id")
+
+                        val index = playQueue.indexOfFirst { item ->
+                            item.queueId == queueItemId
+                        }
+
+                        if (index == -1) return
+
+                        val extrasBundle = Bundle().apply {
+                            putString("album", it.getString("album"))
+                            putString("album_id", it.getString("album_id"))
+                        }
+
+                        val mediaDescription = MediaDescriptionCompat.Builder()
+                            .setExtras(extrasBundle)
+                            .setMediaId(playQueue[index].description.mediaId)
+                            .setSubtitle(it.getString("artist"))
+                            .setTitle(it.getString("title"))
+                            .build()
+
+                        playQueue.removeAt(index)
+                        val updatedQueueItem = QueueItem(mediaDescription, queueItemId)
+                        playQueue.add(index, updatedQueueItem)
+
+                        if (queueItemId == currentlyPlayingQueueItemId) {
+                            setCurrentMetadata()
+                            refreshNotification()
+                        }
                         setPlayQueue()
                     }
                 }

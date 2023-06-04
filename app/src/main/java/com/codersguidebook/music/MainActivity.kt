@@ -8,6 +8,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.SharedPreferences
+import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
@@ -26,6 +27,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.NavHostFragment
@@ -44,6 +46,7 @@ import com.codersguidebook.music.ui.songs.SongsFragmentDirections
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
+import java.io.FileOutputStream
 
 class MainActivity : AppCompatActivity() {
 
@@ -57,6 +60,7 @@ class MainActivity : AppCompatActivity() {
     private val playQueueViewModel: PlayQueueViewModel by viewModels()
     private lateinit var mediaBrowser: MediaBrowserCompat
     private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var musicViewModel: MusicViewModel
 
     private val connectionCallbacks = object : MediaBrowserCompat.ConnectionCallback() {
         override fun onConnected() {
@@ -163,6 +167,8 @@ class MainActivity : AppCompatActivity() {
         binding.navView.setNavigationItemSelectedListener(onNavigationItemSelectedListener)
 
         binding.navView.itemIconTintList = null
+
+        musicViewModel = ViewModelProvider(this)[MusicViewModel::class.java]
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -279,6 +285,34 @@ class MainActivity : AppCompatActivity() {
             .into(view)
     }
 
+    fun saveImage(albumId: String, image: Bitmap) {
+        val directory = ContextWrapper(application).getDir("albumArt", Context.MODE_PRIVATE)
+        val path = File(directory, "$albumId.jpg")
+
+        FileOutputStream(path).use {
+            image.compress(Bitmap.CompressFormat.JPEG, 100, it)
+        }
+    }
+
+    fun updateSong(song: Song) {
+        musicViewModel.updateSong(song)
+
+        // All occurrences of the song need to be updated in the play queue
+        val affectedQueueItems = playQueue.filter { it.description.mediaId == song.songId.toString() }
+        if (affectedQueueItems.isEmpty()) return
+
+        val metadataBundle = Bundle().apply {
+            putString("album", song.album)
+            putString("album_id", song.albumId)
+            putString("artist", song.artist)
+            putString("title", song.title)
+        }
+        for (queueItem in affectedQueueItems) {
+            metadataBundle.putLong("queue_id", queueItem.queueId)
+            mediaController.sendCommand("UPDATE_QUEUE_ITEM", metadataBundle, null)
+        }
+    }
+
     fun handleChangeToContentUri(uri: Uri) = lifecycleScope.launch(Dispatchers.IO) {
         val songIdString = uri.toString().removePrefix(
             MediaStore.Audio.Media.EXTERNAL_CONTENT_URI.toString() + "/")
@@ -296,12 +330,12 @@ class MainActivity : AppCompatActivity() {
                     cursor.apply {
                         this.moveToNext()
                         val createdSong = createSongFromCursor(this)
-                        musicLibraryViewModel.saveSongs(listOf(createdSong))
+                        musicViewModel.insertSong(createdSong)
                     }
                 }
                 cursor?.count == 0 -> {
                     existingSong?.let {
-                        musicLibraryViewModel.deleteSong(existingSong)
+                        musicViewModel.deleteSong(existingSong)
                         findSongIdInPlayQueueToRemove(songId)
                     }
                 }

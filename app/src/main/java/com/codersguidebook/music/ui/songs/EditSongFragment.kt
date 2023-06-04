@@ -131,7 +131,7 @@ class EditSongFragment : Fragment() {
                         song!!.track = completeTrack
                         song!!.year = newYear
 
-                        mainActivity.updateSong(listOf(song!!))
+                        mainActivity.updateSong(song!!)
                     }
 
                     Toast.makeText(activity, getString(R.string.details_saved), Toast.LENGTH_SHORT).show()
