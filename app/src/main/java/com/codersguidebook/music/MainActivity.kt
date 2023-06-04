@@ -1,13 +1,16 @@
 package com.codersguidebook.music
 
-import android.app.Application
+import android.widget.PopupMenu
+import androidx.navigation.findNavController
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.SharedPreferences
+import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaDescriptionCompat
 import android.support.v4.media.MediaMetadataCompat
@@ -16,6 +19,7 @@ import android.support.v4.media.session.MediaSessionCompat.QueueItem
 import android.support.v4.media.session.PlaybackStateCompat
 import android.support.v4.media.session.PlaybackStateCompat.*
 import android.view.Menu
+import android.view.View
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.viewModels
@@ -36,6 +40,7 @@ import androidx.preference.PreferenceManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.signature.ObjectKey
+import com.codersguidebook.music.ui.songs.SongsFragmentDirections
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
@@ -272,5 +277,35 @@ class MainActivity : AppCompatActivity() {
             .signature(ObjectKey(file?.path + file?.lastModified()))
             .override(600, 600)
             .into(view)
+    }
+
+    fun handleChangeToContentUri(uri: Uri) = lifecycleScope.launch(Dispatchers.IO) {
+        val songIdString = uri.toString().removePrefix(
+            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI.toString() + "/")
+        try {
+            val selection = MediaStore.Audio.Media._ID + "=?"
+            val selectionArgs = arrayOf(songIdString)
+            val cursor = getMediaStoreCursor(selection, selectionArgs)
+
+            val songId = songIdString.toLong()
+            val existingSong = musicViewModel.allSongs.value.find {
+                mediaId == songId
+            }
+            when {
+                existingSong == null && cursor?.count!! > 0 -> {
+                    cursor.apply {
+                        this.moveToNext()
+                        val createdSong = createSongFromCursor(this)
+                        musicLibraryViewModel.saveSongs(listOf(createdSong))
+                    }
+                }
+                cursor?.count == 0 -> {
+                    existingSong?.let {
+                        musicLibraryViewModel.deleteSong(existingSong)
+                        findSongIdInPlayQueueToRemove(songId)
+                    }
+                }
+            }
+        } catch (_: NumberFormatException) { refreshMusicLibrary() }
     }
 }
