@@ -78,10 +78,25 @@ class SongsAdapter(private val activity: MainActivity, private val fragment: Son
                     }
 
                     // Check if the song has been removed from the list
-                    val songIsRemoved = newSongs.find { it.songId == songs[index].songId } == null
-                    if (songIsRemoved) {
-                        songs.removeAt(index)
-                        notifyItemRemoved(index)
+                    fun songIdsDoNotMatchAtCurrentIndex(): Boolean {
+                        return newSongs.find { it.songId == songs[index].songId } == null
+                    }
+
+                    if (songIdsDoNotMatchAtCurrentIndex()) {
+                        var numberOfItemsRemoved = 0
+                        do {
+                            songs.removeAt(index)
+                            ++numberOfItemsRemoved
+                        } while (index < songs.size && songIdsDoNotMatchAtCurrentIndex())
+
+                        when {
+                            numberOfItemsRemoved == 1 -> notifyItemRemoved(index)
+                            numberOfItemsRemoved > 1 -> notifyItemRangeRemoved(index,
+                                numberOfItemsRemoved)
+                        }
+
+                        // Check if removing the song(s) has fixed the list
+                        if (song.songId == songs[index].songId) continue
                     }
                 }
                 song != songs[index] -> {

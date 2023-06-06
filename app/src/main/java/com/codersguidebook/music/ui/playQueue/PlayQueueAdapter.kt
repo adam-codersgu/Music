@@ -67,4 +67,54 @@ class PlayQueueAdapter(private val activity: MainActivity, private val fragment:
     }
 
     override fun getItemCount() = playQueue.size
+
+    fun processNewPlayQueue(newPlayQueue: List<QueueItem>) {
+        for ((index, queueItem) in newPlayQueue.withIndex()) {
+            when {
+                index >= playQueue.size -> {
+                    playQueue.add(queueItem)
+                    notifyItemInserted(index)
+                }
+                queueItem.queueId != playQueue[index].queueId -> {
+                    // Check if the queueItem is a new entry to the list
+                    val queueItemIsNewEntry = playQueue.find { it.queueId == queueItem.queueId } == null
+                    if (queueItemIsNewEntry) {
+                        playQueue.add(index, queueItem)
+                        notifyItemInserted(index)
+                        continue
+                    }
+
+                    fun queueItemIdsDoNotMatchAtCurrentIndex(): Boolean {
+                        return newPlayQueue.find { it.queueId == playQueue[index].queueId } == null
+                    }
+
+                    // Check if the queueItem has been removed from the list
+                    if (queueItemIdsDoNotMatchAtCurrentIndex()) {
+                        var numberOfItemsRemoved = 0
+                        do {
+                            playQueue.removeAt(index)
+                            ++numberOfItemsRemoved
+                        } while (index < playQueue.size && queueItemIdsDoNotMatchAtCurrentIndex())
+
+                        when {
+                            numberOfItemsRemoved == 1 -> notifyItemRemoved(index)
+                            numberOfItemsRemoved > 1 -> notifyItemRangeRemoved(index,
+                                numberOfItemsRemoved)
+                        }
+                    }
+                }
+                queueItem.description.title != playQueue[index].description.title ||
+                        queueItem.description.subtitle != playQueue[index].description.subtitle -> {
+                    playQueue[index] = queueItem
+                    notifyItemChanged(index)
+                }
+            }
+        }
+
+        if (playQueue.size > newPlayQueue.size) {
+            val numberItemsToRemove = playQueue.size - newPlayQueue.size
+            repeat(numberItemsToRemove) { playQueue.removeLast() }
+            notifyItemRangeRemoved(newPlayQueue.size, numberItemsToRemove)
+        }
+    }
 }
