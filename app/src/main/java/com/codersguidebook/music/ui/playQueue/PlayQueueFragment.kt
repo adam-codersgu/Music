@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.DefaultItemAnimator
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.codersguidebook.music.MainActivity
 import com.codersguidebook.music.PlayQueueViewModel
 import com.codersguidebook.music.databinding.FragmentPlayQueueBinding
@@ -44,6 +45,23 @@ class PlayQueueFragment : Fragment() {
             } else {
                 adapter.processNewPlayQueue(playQueue)
             }
+        }
+
+        playQueueViewModel.currentQueueItemId.observe(viewLifecycleOwner) { position ->
+            position?.let { adapter.changeCurrentlyPlayingQueueItemId(it) }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        val currentlyPlayingQueueItemIndex = adapter.playQueue.indexOfFirst {queueItem ->
+            queueItem.queueId == adapter.currentlyPlayingQueueId
+        }
+
+        if (currentlyPlayingQueueItemIndex != -1) {
+            (binding.root.layoutManager as LinearLayoutManager)
+                .scrollToPositionWithOffset(currentlyPlayingQueueItemIndex, 0)
         }
     }
 

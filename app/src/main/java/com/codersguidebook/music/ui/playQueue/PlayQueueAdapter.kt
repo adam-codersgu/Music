@@ -117,4 +117,20 @@ class PlayQueueAdapter(private val activity: MainActivity, private val fragment:
             notifyItemRangeRemoved(newPlayQueue.size, numberItemsToRemove)
         }
     }
+
+    fun changeCurrentlyPlayingQueueItemId(newQueueId: Long) {
+        val oldCurrentlyPlayingIndex = playQueue.indexOfFirst {
+            it.queueId == currentlyPlayingQueueId
+        }
+
+        currentlyPlayingQueueId = newQueueId
+        if (oldCurrentlyPlayingIndex != -1) notifyItemChanged(oldCurrentlyPlayingIndex)
+
+        val newCurrentlyPlayingIndex = playQueue.indexOfFirst {
+            it.queueId == currentlyPlayingQueueId
+        }
+        if (newCurrentlyPlayingIndex != -1) {
+            notifyItemChanged(newCurrentlyPlayingIndex)
+        }
+    }
 }
