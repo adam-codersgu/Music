@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.graphics.Color
 import android.support.v4.media.session.MediaSessionCompat.QueueItem
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
@@ -57,7 +58,7 @@ class PlayQueueAdapter(private val activity: MainActivity, private val fragment:
         holder.mArtist.setTextColor(textColour)
 
         holder.mHandle.setOnTouchListener { _, event ->
-            // TODO: Handle the drag action here
+            if (event.actionMasked == MotionEvent.ACTION_DOWN) fragment.startDragging(holder)
             return@setOnTouchListener true
         }
 

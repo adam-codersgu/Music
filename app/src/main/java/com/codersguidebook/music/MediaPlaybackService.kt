@@ -318,6 +318,21 @@ class MediaPlaybackService : MediaBrowserServiceCompat(), OnErrorListener {
             super.onCommand(command, extras, cb)
 
             when (command) {
+                "MOVE_QUEUE_ITEM" -> {
+                    extras?.let {
+                        val queueItemId = it.getLong("queueItemId", -1L)
+                        val newIndex = it.getInt("newIndex", -1)
+                        if (queueItemId == -1L || newIndex == -1 || newIndex >= playQueue.size) return@let
+
+                        val oldIndex = playQueue.indexOfFirst { queueItem -> queueItem.queueId == queueItemId }
+                        if (oldIndex == -1) return@let
+                        val queueItem = playQueue[oldIndex]
+                        playQueue.removeAt(oldIndex)
+                        playQueue.add(newIndex, queueItem)
+                        mediaSessionCompat.setQueue(playQueue)
+                    }
+                }
+
                 "SET_SHUFFLE_MODE" -> {
                     extras?.let {
                         val shuffleMode = extras.getInt("SHUFFLE_MODE", SHUFFLE_MODE_NONE)

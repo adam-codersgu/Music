@@ -313,6 +313,15 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    fun notifyQueueItemMoved(queueId: Long, newIndex: Int) {
+        val bundle = Bundle().apply {
+            putLong("queueItemId", queueId)
+            putInt("newIndex", newIndex)
+        }
+
+        mediaController.sendCommand("MOVE_QUEUE_ITEM", bundle, null)
+    }
+
     fun handleChangeToContentUri(uri: Uri) = lifecycleScope.launch(Dispatchers.IO) {
         val songIdString = uri.toString().removePrefix(
             MediaStore.Audio.Media.EXTERNAL_CONTENT_URI.toString() + "/")

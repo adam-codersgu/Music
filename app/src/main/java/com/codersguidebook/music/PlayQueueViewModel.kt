@@ -8,7 +8,7 @@ import androidx.lifecycle.ViewModel
 
 class PlayQueueViewModel : ViewModel() {
     var playQueue = MutableLiveData<List<QueueItem>>()
-    var currentQueueItemId = MutableLiveData<Int>()
+    var currentQueueItemId = MutableLiveData<Long>()
     var currentlyPlayingSongMetadata = MutableLiveData<MediaMetadataCompat?>()
     var playbackDuration = MutableLiveData<Int>()
     var playbackPosition = MutableLiveData<Int>()
