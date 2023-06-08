@@ -1,14 +1,16 @@
 package com.codersguidebook.music.ui.search
 
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.widget.SearchView
+import androidx.core.view.MenuHost
+import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.recyclerview.widget.DefaultItemAnimator
 import com.codersguidebook.music.MainActivity
 import com.codersguidebook.music.MusicDatabase
+import com.codersguidebook.music.R
 import com.codersguidebook.music.databinding.FragmentSearchBinding
 
 class SearchFragment : Fragment() {
@@ -39,6 +41,33 @@ class SearchFragment : Fragment() {
         binding.recyclerView.itemAnimator = DefaultItemAnimator()
 
         setupMenu()
+    }
+
+    private fun setupMenu() {
+        (requireActivity() as MenuHost).addMenuProvider(object : MenuProvider {
+            override fun onPrepareMenu(menu: Menu) {
+                val searchItem = menu.findItem(R.id.search)
+                searchView = searchItem.actionView as SearchView
+
+                val onQueryListener = object : SearchView.OnQueryTextListener {
+                    override fun onQueryTextChange(newText: String): Boolean {
+                        search("%$newText%")
+                        return true
+                    }
+                    override fun onQueryTextSubmit(query: String): Boolean = true
+                }
+
+                searchView?.apply {
+                    isIconifiedByDefault = false
+                    queryHint = getString(R.string.search_hint)
+                    setOnQueryTextListener(onQueryListener)
+                }
+            }
+
+            override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) { }
+
+            override fun onMenuItemSelected(menuItem: MenuItem): Boolean = false
+        }, viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
 
     override fun onDestroyView() {
