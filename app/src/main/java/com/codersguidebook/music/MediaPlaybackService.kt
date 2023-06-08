@@ -333,6 +333,18 @@ class MediaPlaybackService : MediaBrowserServiceCompat(), OnErrorListener {
                     }
                 }
 
+                "REMOVE_QUEUE_ITEM" -> {
+                    extras?.let {
+                        val queueItemId = extras.getLong("queueItemId", -1L)
+                        when (queueItemId) {
+                            -1L -> return@let
+                            currentlyPlayingQueueItemId -> onSkipToNext()
+                        }
+                        playQueue.removeIf { it.queueId == queueItemId }
+                        setPlayQueue()
+                    }
+                }
+
                 "SET_SHUFFLE_MODE" -> {
                     extras?.let {
                         val shuffleMode = extras.getInt("SHUFFLE_MODE", SHUFFLE_MODE_NONE)

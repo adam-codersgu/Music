@@ -5,6 +5,7 @@ import android.support.v4.media.session.MediaSessionCompat.QueueItem
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.PopupMenu
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.DefaultItemAnimator
@@ -14,6 +15,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.codersguidebook.music.MainActivity
 import com.codersguidebook.music.PlayQueueViewModel
+import com.codersguidebook.music.R
 import com.codersguidebook.music.databinding.FragmentPlayQueueBinding
 
 class PlayQueueFragment : Fragment() {
@@ -114,6 +116,17 @@ class PlayQueueFragment : Fragment() {
     }
 
     fun startDragging(viewHolder: RecyclerView.ViewHolder) = itemTouchHelper.startDrag(viewHolder)
+
+    fun showPopup(view: View, queueId: Long) {
+        PopupMenu(requireContext(), view).apply {
+            inflate(R.menu.queue_item_menu)
+            setOnMenuItemClickListener {
+                if (it.itemId == R.id.remove_item) mainActivity.removeQueueItemById(queueId)
+                true
+            }
+            show()
+        }
+    }
 
     override fun onDestroyView() {
         super.onDestroyView()

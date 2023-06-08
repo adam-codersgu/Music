@@ -43,6 +43,7 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.signature.ObjectKey
 import com.codersguidebook.music.ui.songs.SongsFragmentDirections
+import com.google.gson.GsonBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
@@ -80,12 +81,13 @@ class MainActivity : AppCompatActivity() {
         override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
             super.onPlaybackStateChanged(state)
 
-            // TODO: Refresh the play queue
-            /* refreshPlayQueue()
+            val mediaControllerCompat = MediaControllerCompat.getMediaController(this@MainActivity)
+            playQueue = mediaControllerCompat.queue
+            playQueueViewModel.playQueue.postValue(playQueue)
             if (state?.activeQueueItemId != currentQueueItemId) {
                 currentQueueItemId = state?.activeQueueItemId ?: -1
-                savePlayQueueId(currentQueueItemId)
-            } */
+                playQueueViewModel.currentQueueItemId.postValue(currentQueueItemId)
+            }
 
             playQueueViewModel.playbackState.value = state?.state ?: STATE_NONE
             when (state?.state) {
@@ -320,6 +322,26 @@ class MainActivity : AppCompatActivity() {
         }
 
         mediaController.sendCommand("MOVE_QUEUE_ITEM", bundle, null)
+    }
+
+    fun removeQueueItemById(queueId: Long) {
+        if (playQueue.isNotEmpty()) {
+            val bundle = Bundle().apply {
+                putLong("queueItemId", queueId)
+            }
+
+            mediaController.sendCommand("REMOVE_QUEUE_ITEM", bundle, null)
+        }
+    }
+
+    fun playNext(song: Song) {
+        val index = playQueue.indexOfFirst { it.queueId == currentQueueItemId } + 1
+
+        val songDesc = buildMediaDescription(song)
+        val mediaControllerCompat = MediaControllerCompat.getMediaController(this@MainActivity)
+        mediaControllerCompat.addQueueItem(songDesc, index)
+
+        Toast.makeText(this, getString(R.string.added_to_queue, song.title), Toast.LENGTH_SHORT).show()
     }
 
     fun handleChangeToContentUri(uri: Uri) = lifecycleScope.launch(Dispatchers.IO) {

@@ -30,7 +30,7 @@ class PlayQueueAdapter(private val activity: MainActivity, private val fragment:
         init {
             itemView.isClickable = true
             itemView.setOnClickListener {
-                // TODO: Skip to a different position in the play queue
+                activity.skipToAndPlayQueueItem(playQueue[layoutPosition].queueId)
             }
         }
     }
@@ -63,7 +63,7 @@ class PlayQueueAdapter(private val activity: MainActivity, private val fragment:
         }
 
         holder.mMenu.setOnClickListener {
-            // TODO: Open the options menu here
+            fragment.showPopup(it, playQueue[position].queueId)
         }
     }
 
