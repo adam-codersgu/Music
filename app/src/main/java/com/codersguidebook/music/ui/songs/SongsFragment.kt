@@ -2,17 +2,14 @@ package com.codersguidebook.music.ui.songs
 
 import android.os.Bundle
 import android.view.LayoutInflater
-import androidx.fragment.app.Fragment
 import android.view.View
 import android.view.ViewGroup
-import android.widget.PopupMenu
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import androidx.navigation.findNavController
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.RecyclerView
 import com.codersguidebook.music.MainActivity
 import com.codersguidebook.music.MusicViewModel
-import com.codersguidebook.music.R
 import com.codersguidebook.music.Song
 import com.codersguidebook.music.databinding.FragmentSongsBinding
 import com.codersguidebook.recyclerviewfastscroller.RecyclerViewScrollbar
@@ -45,7 +42,7 @@ class SongsFragment : Fragment() {
 
         binding.scrollbar.recyclerView = binding.recyclerView
 
-        adapter = SongsAdapter(mainActivity, this)
+        adapter = SongsAdapter(mainActivity)
         binding.recyclerView.adapter = adapter
         adapter.stateRestorationPolicy = RecyclerView.Adapter.StateRestorationPolicy.PREVENT_WHEN_EMPTY
 
@@ -75,34 +72,12 @@ class SongsFragment : Fragment() {
             mainActivity.playNewPlayQueue(songs, shuffle = true)
         }
 
-        if (adapter.songs.isEmpty()) {
-            adapter.songs.addAll(songs)
-            adapter.notifyItemRangeInserted(0, songs.size)
-        } else {
-            adapter.processNewSongs(songs)
-        }
+        adapter.processNewSongs(songs)
 
         isUpdating = false
         if (unhandledRequestReceived) {
             unhandledRequestReceived = false
             musicViewModel.allSongs.value?.let { updateRecyclerView(it) }
-        }
-    }
-
-    fun showPopup(view: View, song: Song) {
-        PopupMenu(this.context, view).apply {
-            inflate(R.menu.song_options)
-            setOnMenuItemClickListener { menuItem ->
-                when (menuItem.itemId) {
-                    R.id.play_next -> mainActivity.playNext(song)
-                    R.id.edit_metadata -> {
-                        val action = SongsFragmentDirections.actionEditSong(song)
-                        mainActivity.findNavController(R.id.nav_host_fragment).navigate(action)
-                    }
-                }
-                true
-            }
-            show()
         }
     }
 

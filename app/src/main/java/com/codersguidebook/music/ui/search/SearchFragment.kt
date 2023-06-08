@@ -5,13 +5,19 @@ import android.view.*
 import android.widget.SearchView
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
+import androidx.core.view.isGone
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DefaultItemAnimator
 import com.codersguidebook.music.MainActivity
 import com.codersguidebook.music.MusicDatabase
 import com.codersguidebook.music.R
 import com.codersguidebook.music.databinding.FragmentSearchBinding
+import com.codersguidebook.music.ui.songs.SongsAdapter
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class SearchFragment : Fragment() {
 
@@ -19,6 +25,7 @@ class SearchFragment : Fragment() {
     private val binding get() = _binding!!
     private var musicDatabase: MusicDatabase? = null
     private var searchView: SearchView? = null
+    private lateinit var adapter: SongsAdapter
     private lateinit var mainActivity: MainActivity
 
     override fun onCreateView(
@@ -36,8 +43,8 @@ class SearchFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // TODO: Initialise the adapter and apply it to the RecyclerView
-
+        adapter = SongsAdapter(mainActivity)
+        binding.recyclerView.adapter = adapter
         binding.recyclerView.itemAnimator = DefaultItemAnimator()
 
         setupMenu()
@@ -68,6 +75,16 @@ class SearchFragment : Fragment() {
 
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean = false
         }, viewLifecycleOwner, Lifecycle.State.RESUMED)
+    }
+
+    private fun search(query: String) = lifecycleScope.launch(Dispatchers.IO) {
+        binding.noResults.isGone = true
+        val songs = musicDatabase!!.musicDao().getSongsLikeSearch(query).take(10)
+
+        lifecycleScope.launch(Dispatchers.Main) {
+            if (songs.isEmpty()) binding.noResults.isVisible = true
+            adapter.processNewSongs(songs)
+        }
     }
 
     override fun onDestroyView() {

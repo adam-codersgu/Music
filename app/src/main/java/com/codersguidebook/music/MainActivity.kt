@@ -1,7 +1,5 @@
 package com.codersguidebook.music
 
-import android.widget.PopupMenu
-import androidx.navigation.findNavController
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.ComponentName
@@ -22,6 +20,7 @@ import android.support.v4.media.session.PlaybackStateCompat.*
 import android.view.Menu
 import android.view.View
 import android.widget.ImageView
+import android.widget.PopupMenu
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -35,15 +34,13 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
-import com.codersguidebook.music.databinding.ActivityMainBinding
-import com.google.android.material.navigation.NavigationView
-import com.google.android.material.snackbar.Snackbar
 import androidx.preference.PreferenceManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.signature.ObjectKey
+import com.codersguidebook.music.databinding.ActivityMainBinding
 import com.codersguidebook.music.ui.songs.SongsFragmentDirections
-import com.google.gson.GsonBuilder
+import com.google.android.material.navigation.NavigationView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
@@ -285,6 +282,23 @@ class MainActivity : AppCompatActivity() {
             .signature(ObjectKey(file?.path + file?.lastModified()))
             .override(600, 600)
             .into(view)
+    }
+
+    fun showSongPopup(view: View, song: Song) {
+        PopupMenu(this, view).apply {
+            inflate(R.menu.song_options)
+            setOnMenuItemClickListener { menuItem ->
+                when (menuItem.itemId) {
+                    R.id.play_next -> playNext(song)
+                    R.id.edit_metadata -> {
+                        val action = MobileNavigationDirections.actionEditSong(song)
+                        findNavController(R.id.nav_host_fragment).navigate(action)
+                    }
+                }
+                true
+            }
+            show()
+        }
     }
 
     fun saveImage(albumId: String, image: Bitmap) {

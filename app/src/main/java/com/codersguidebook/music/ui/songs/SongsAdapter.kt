@@ -12,7 +12,7 @@ import com.codersguidebook.music.R
 import com.codersguidebook.music.Song
 import com.codersguidebook.recyclerviewfastscroller.RecyclerViewScrollbar
 
-class SongsAdapter(private val activity: MainActivity, private val fragment: SongsFragment):
+class SongsAdapter(private val activity: MainActivity):
     RecyclerView.Adapter<SongsAdapter.SongsViewHolder>(), RecyclerViewScrollbar.ValueLabelListener {
     val songs = mutableListOf<Song>()
 
@@ -37,7 +37,7 @@ class SongsAdapter(private val activity: MainActivity, private val fragment: Son
             }
 
             itemView.setOnLongClickListener{
-                fragment.showPopup(it, songs[layoutPosition])
+                activity.showSongPopup(it, songs[layoutPosition])
                 return@setOnLongClickListener true
             }
         }
@@ -55,7 +55,7 @@ class SongsAdapter(private val activity: MainActivity, private val fragment: Son
         holder.mTitle.text = current.title
         holder.mArtist.text = current.artist
         holder.mMenu.setOnClickListener {
-            fragment.showPopup(it, current)
+            activity.showSongPopup(it, current)
         }
     }
 
@@ -64,6 +64,10 @@ class SongsAdapter(private val activity: MainActivity, private val fragment: Son
     fun processNewSongs(newSongs: List<Song>) {
         for ((index, song) in newSongs.withIndex()) {
             when {
+                songs.isEmpty() -> {
+                    songs.addAll(newSongs)
+                    notifyItemRangeInserted(0, newSongs.size)
+                }
                 index >= songs.size -> {
                     songs.add(song)
                     notifyItemInserted(index)
