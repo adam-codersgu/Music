@@ -3,6 +3,7 @@ package com.codersguidebook.music.ui.search
 import android.os.Bundle
 import android.view.*
 import android.widget.SearchView
+import androidx.activity.OnBackPressedCallback
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
 import androidx.core.view.isGone
@@ -10,6 +11,7 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.DefaultItemAnimator
 import com.codersguidebook.music.MainActivity
 import com.codersguidebook.music.MusicDatabase
@@ -27,6 +29,7 @@ class SearchFragment : Fragment() {
     private var searchView: SearchView? = null
     private lateinit var adapter: SongsAdapter
     private lateinit var mainActivity: MainActivity
+    private lateinit var onBackPressedCallback: OnBackPressedCallback
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -48,6 +51,26 @@ class SearchFragment : Fragment() {
         binding.recyclerView.itemAnimator = DefaultItemAnimator()
 
         setupMenu()
+
+        onBackPressedCallback = object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                mainActivity.iconifySearchView()
+                findNavController().popBackStack()
+            }
+        }
+
+        mainActivity.onBackPressedDispatcher.addCallback(viewLifecycleOwner, onBackPressedCallback)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        mainActivity.hideKeyboard()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+        onBackPressedCallback.remove()
     }
 
     private fun setupMenu() {
@@ -85,10 +108,5 @@ class SearchFragment : Fragment() {
             if (songs.isEmpty()) binding.noResults.isVisible = true
             adapter.processNewSongs(songs)
         }
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
     }
 }
