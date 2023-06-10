@@ -381,34 +381,4 @@ class MainActivity : AppCompatActivity() {
             inputManager.hideSoftInputFromWindow(it.windowToken, InputMethodManager.HIDE_NOT_ALWAYS)
         }
     }
-
-    fun handleChangeToContentUri(uri: Uri) = lifecycleScope.launch(Dispatchers.IO) {
-        val songIdString = uri.toString().removePrefix(
-            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI.toString() + "/")
-        try {
-            val selection = MediaStore.Audio.Media._ID + "=?"
-            val selectionArgs = arrayOf(songIdString)
-            val cursor = getMediaStoreCursor(selection, selectionArgs)
-
-            val songId = songIdString.toLong()
-            val existingSong = musicViewModel.allSongs.value.find {
-                mediaId == songId
-            }
-            when {
-                existingSong == null && cursor?.count!! > 0 -> {
-                    cursor.apply {
-                        this.moveToNext()
-                        val createdSong = createSongFromCursor(this)
-                        musicViewModel.insertSong(createdSong)
-                    }
-                }
-                cursor?.count == 0 -> {
-                    existingSong?.let {
-                        musicViewModel.deleteSong(existingSong)
-                        findSongIdInPlayQueueToRemove(songId)
-                    }
-                }
-            }
-        } catch (_: NumberFormatException) { refreshMusicLibrary() }
-    }
 }
