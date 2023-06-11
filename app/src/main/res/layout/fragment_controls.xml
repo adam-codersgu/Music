@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_height="wrap_content"
+    android:layout_width="match_parent"
+    android:background="?attr/selectableItemBackground"
+    android:layout_gravity="bottom">
+
+    <ProgressBar
+        android:id="@+id/songProgressBar"
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        style="?android:attr/progressBarStyleHorizontal" />
+
+    <ImageView
+        android:id="@+id/artwork"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:contentDescription="@string/set_album_artwork"
+        android:transitionName="@string/transition_image"
+        android:layout_below="@id/songProgressBar"
+        android:layout_alignParentStart="true" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:padding="4dp"
+        android:orientation="vertical"
+        android:layout_alignTop="@id/artwork"
+        android:layout_alignBottom="@id/artwork"
+        android:layout_toEndOf="@id/artwork"
+        android:layout_toStartOf="@id/btnBackward" >
+
+        <TextView
+            android:id="@+id/title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:transitionName="@string/transition_title"
+            android:layout_marginBottom="2dp"
+            android:singleLine="true"
+            android:textSize="16sp"
+            android:textColor="?attr/colorOnSurface" />
+
+        <TextView
+            android:id="@+id/artist"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:transitionName="@string/transition_subtitle"
+            android:singleLine="true"
+            android:textSize="14sp"
+            android:textColor="@color/material_on_surface_emphasis_medium" />
+
+        <TextView
+            android:id="@+id/album"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:transitionName="@string/transition_subtitle2"
+            android:singleLine="true"
+            android:textSize="14sp"
+            android:textColor="@color/material_on_surface_emphasis_medium" />
+    </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/btnBackward"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/ic_back"
+        android:transitionName="@string/transition_back"
+        android:contentDescription="@string/skip_back"
+        android:layout_centerVertical="true"
+        android:layout_toStartOf="@id/btnPlay"
+        style="@style/Widget.Custom.Button" />
+
+    <ImageButton
+        android:id="@+id/btnPlay"
+        android:layout_width="58dp"
+        android:layout_height="58dp"
+        android:layout_marginHorizontal="8dp"
+        android:src="@drawable/ic_play"
+        android:transitionName="@string/transition_play"
+        android:contentDescription="@string/play_or_pause_current_track"
+        android:layout_centerVertical="true"
+        android:layout_toStartOf="@id/btnForward"
+        style="@style/Widget.Custom.Button" />
+
+    <ImageButton
+        android:id="@+id/btnForward"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/ic_next"
+        android:transitionName="@string/transition_forward"
+        android:contentDescription="@string/skip_ahead"
+        android:layout_centerVertical="true"
+        android:layout_alignParentEnd="true"
+        style="@style/Widget.Custom.Button" />
+</RelativeLayout>
