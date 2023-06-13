@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.FragmentNavigatorExtras
 import androidx.navigation.fragment.findNavController
 import com.bumptech.glide.Glide
@@ -15,6 +16,8 @@ import com.codersguidebook.music.MainActivity
 import com.codersguidebook.music.PlayQueueViewModel
 import com.codersguidebook.music.R
 import com.codersguidebook.music.databinding.FragmentControlsBinding
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 class ControlsFragment : Fragment() {
 
@@ -70,7 +73,42 @@ class ControlsFragment : Fragment() {
             binding.songProgressBar.max = it
         }
 
-        // TODO: Respond to the playback controls here
+        binding.btnPlay.setOnClickListener {
+            mainActivity.playPauseControl()
+        }
+
+        binding.btnBackward.setOnClickListener{
+            if (fastRewinding) fastRewinding = false
+            else mainActivity.skipBack()
+        }
+
+        binding.btnBackward.setOnLongClickListener {
+            fastRewinding = true
+            lifecycleScope.launch {
+                do {
+                    mainActivity.fastRewind()
+                    delay(500)
+                } while (fastRewinding)
+            }
+            return@setOnLongClickListener false
+        }
+
+
+        binding.btnForward.setOnClickListener{
+            if (fastForwarding) fastForwarding = false
+            else mainActivity.skipForward()
+        }
+
+        binding.btnForward.setOnLongClickListener {
+            fastForwarding = true
+            lifecycleScope.launch {
+                do {
+                    mainActivity.fastForward()
+                    delay(500)
+                } while (fastForwarding)
+            }
+            return@setOnLongClickListener false
+        }
     }
 
     override fun onDestroyView() {

@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.SharedPreferences
 import android.graphics.Bitmap
+import android.media.session.PlaybackState
 import android.os.Bundle
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaDescriptionCompat
@@ -377,4 +378,31 @@ class MainActivity : AppCompatActivity() {
             inputManager.hideSoftInputFromWindow(it.windowToken, InputMethodManager.HIDE_NOT_ALWAYS)
         }
     }
+
+    fun playPauseControl() {
+        when (mediaController.playbackState?.state) {
+            PlaybackState.STATE_PAUSED -> mediaController.transportControls.play()
+            PlaybackState.STATE_PLAYING -> mediaController.transportControls.pause()
+            else -> {
+                // Load and play the user's music library if the play queue is empty
+                if (playQueue.isEmpty()) {
+                    playNewPlayQueue(musicViewModel.allSongs.value ?: return)
+                }
+                else {
+                    // It's possible a queue has been built without ever pressing play.
+                    // In which case, commence playback
+                    mediaController.transportControls.prepare()
+                    mediaController.transportControls.play()
+                }
+            }
+        }
+    }
+
+    fun skipBack() = mediaController.transportControls.skipToPrevious()
+
+    fun skipForward() = mediaController.transportControls.skipToNext()
+
+    fun fastRewind() = mediaController.transportControls.rewind()
+
+    fun fastForward() = mediaController.transportControls.fastForward()
 }

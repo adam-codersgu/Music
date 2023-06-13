@@ -314,6 +314,22 @@ class MediaPlaybackService : MediaBrowserServiceCompat(), OnErrorListener {
             mediaSessionCompat.setQueue(playQueue)
         }
 
+        override fun onFastForward() {
+            super.onFastForward()
+
+            val newPlaybackPosition = mediaPlayer?.currentPosition?.plus(5000) ?: return
+            if (newPlaybackPosition > (mediaPlayer?.duration ?: return)) onSkipToNext()
+            else onSeekTo(newPlaybackPosition.toLong())
+        }
+
+        override fun onRewind() {
+            super.onRewind()
+
+            val newPlaybackPosition = mediaPlayer?.currentPosition?.minus(5000) ?: return
+            if (newPlaybackPosition < 0) onSkipToPrevious()
+            else onSeekTo(newPlaybackPosition.toLong())
+        }
+
         override fun onCommand(command: String?, extras: Bundle?, cb: ResultReceiver?) {
             super.onCommand(command, extras, cb)
 
