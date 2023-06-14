@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="24dp"
+    android:background="?attr/colorSurface">
+
+    <ImageView
+        android:id="@+id/artwork"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:clickable="true"
+        android:transitionName="@string/transition_image"
+        android:contentDescription="@string/album_artwork"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintDimensionRatio="1:1" />
+
+    <ImageButton
+        android:id="@+id/currentClose"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_marginStart="14dp"
+        android:layout_marginTop="36dp"
+        android:src="@drawable/ic_down"
+        android:translationZ="200dp"
+        android:contentDescription="@string/close_currently_playing"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        style="@style/Widget.Custom.Button" />
+
+    <ImageButton
+        android:id="@+id/currentButtonRepeat"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_marginStart="8dp"
+        android:src="@drawable/ic_repeat"
+        android:contentDescription="@string/repeat_current_playlist"
+        app:layout_constraintTop_toBottomOf="@id/artwork"
+        app:layout_constraintBottom_toTopOf="@id/currentSeekBar"
+        app:layout_constraintStart_toStartOf="parent"
+        style="@style/Widget.Custom.Button" />
+
+    <ImageButton
+        android:id="@+id/currentButtonShuffle"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_marginEnd="8dp"
+        android:src="@drawable/ic_shuffle"
+        android:contentDescription="@string/shuffle_play_queue"
+        app:layout_constraintTop_toBottomOf="@id/artwork"
+        app:layout_constraintBottom_toTopOf="@id/currentSeekBar"
+        app:layout_constraintEnd_toEndOf="parent"
+        style="@style/Widget.Custom.Button" />
+
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:transitionName="@string/transition_title"
+        android:singleLine="true"
+        android:textSize="20sp"
+        android:textColor="?attr/colorOnSurface"
+        app:layout_constraintEnd_toStartOf="@id/currentButtonShuffle"
+        app:layout_constraintStart_toEndOf="@id/currentButtonRepeat"
+        app:layout_constraintBottom_toTopOf="@id/artist" />
+
+    <TextView
+        android:id="@+id/artist"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:transitionName="@string/transition_subtitle"
+        android:layout_margin="5dp"
+        android:singleLine="true"
+        android:textSize="18sp"
+        android:textColor="@color/material_on_surface_emphasis_medium"
+        app:layout_constraintEnd_toStartOf="@id/currentButtonShuffle"
+        app:layout_constraintStart_toEndOf="@id/currentButtonRepeat"
+        app:layout_constraintTop_toBottomOf="@id/artwork"
+        app:layout_constraintBottom_toTopOf="@id/currentSeekBar" />
+
+    <TextView
+        android:id="@+id/album"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:transitionName="@string/transition_subtitle2"
+        android:singleLine="true"
+        android:textSize="18sp"
+        android:textColor="@color/material_on_surface_emphasis_medium"
+        android:layout_centerHorizontal="true"
+        app:layout_constraintEnd_toStartOf="@id/currentButtonShuffle"
+        app:layout_constraintStart_toEndOf="@id/currentButtonRepeat"
+        app:layout_constraintTop_toBottomOf="@id/artist" />
+
+    <SeekBar
+        android:id="@+id/currentSeekBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginVertical="26dp"
+        app:layout_constraintBottom_toTopOf="@id/btnPlay" />
+
+    <TextView
+        android:id="@+id/currentPosition"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:textSize="14sp"
+        android:textColor="@color/material_on_surface_emphasis_medium"
+        app:layout_constraintTop_toBottomOf="@id/currentSeekBar"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/currentMax"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="10dp"
+        android:textSize="14sp"
+        android:textColor="@color/material_on_surface_emphasis_medium"
+        app:layout_constraintTop_toBottomOf="@id/currentSeekBar"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <ImageButton
+        android:id="@+id/btnBackward"
+        android:layout_width="55dp"
+        android:layout_height="55dp"
+        android:layout_marginHorizontal="12dp"
+        android:src="@drawable/ic_back"
+        android:transitionName="@string/transition_back"
+        android:contentDescription="@string/skip_back"
+        app:layout_constraintTop_toTopOf="@id/btnPlay"
+        app:layout_constraintBottom_toBottomOf="@id/btnPlay"
+        app:layout_constraintEnd_toStartOf="@id/btnPlay"
+        style="@style/Widget.Custom.Button" />
+
+    <ImageButton
+        android:id="@+id/btnPlay"
+        android:layout_width="70dp"
+        android:layout_height="70dp"
+        android:layout_marginBottom="12dp"
+        android:src="@drawable/ic_play"
+        android:transitionName="@string/transition_play"
+        android:contentDescription="@string/play_or_pause_current_track"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        style="@style/Widget.Custom.Button" />
+
+    <ImageButton
+        android:id="@+id/btnForward"
+        android:layout_width="55dp"
+        android:layout_height="55dp"
+        android:layout_marginHorizontal="12dp"
+        android:src="@drawable/ic_next"
+        android:transitionName="@string/transition_forward"
+        android:contentDescription="@string/skip_ahead"
+        app:layout_constraintTop_toTopOf="@id/btnPlay"
+        app:layout_constraintBottom_toBottomOf="@id/btnPlay"
+        app:layout_constraintStart_toEndOf="@id/btnPlay"
+        style="@style/Widget.Custom.Button" />
+</androidx.constraintlayout.widget.ConstraintLayout>
