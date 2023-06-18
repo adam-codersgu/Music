@@ -361,10 +361,17 @@ class MediaPlaybackService : MediaBrowserServiceCompat(), OnErrorListener {
                     }
                 }
 
+                "SET_REPEAT_MODE" -> {
+                    extras?.let {
+                        val repeatMode = extras.getInt("REPEAT_MODE", REPEAT_MODE_NONE)
+                        mediaSessionCompat.setRepeatMode(repeatMode)
+                    }
+                }
+
                 "SET_SHUFFLE_MODE" -> {
                     extras?.let {
                         val shuffleMode = extras.getInt("SHUFFLE_MODE", SHUFFLE_MODE_NONE)
-                        onSetShuffleMode(shuffleMode)
+                        mediaSessionCompat.setShuffleMode(shuffleMode)
 
                         if (shuffleMode == SHUFFLE_MODE_ALL) {
                             getCurrentQueueItem()?.let { currentQueueItem ->

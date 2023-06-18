@@ -1,11 +1,11 @@
 package com.codersguidebook.music.ui.currentlyPlaying
 
 import android.annotation.SuppressLint
+import android.widget.PopupMenu
 import android.content.SharedPreferences
 import android.graphics.Color
 import android.os.Bundle
 import android.support.v4.media.MediaMetadataCompat
-import android.support.v4.media.session.PlaybackStateCompat
 import android.support.v4.media.session.PlaybackStateCompat.*
 import android.transition.TransitionInflater
 import android.view.LayoutInflater
@@ -17,12 +17,13 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.findNavController
+import androidx.navigation.fragment.findNavController
 import androidx.preference.PreferenceManager
 import com.bumptech.glide.Glide
 import com.codersguidebook.music.MainActivity
 import com.codersguidebook.music.PlayQueueViewModel
 import com.codersguidebook.music.R
-import com.codersguidebook.music.Song
 import com.codersguidebook.music.databinding.FragmentCurrentlyPlayingBinding
 import com.google.android.material.color.MaterialColors
 import kotlinx.coroutines.Dispatchers
@@ -30,12 +31,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
-import androidx.navigation.fragment.findNavController
 
 class CurrentlyPlayingFragment : Fragment() {
 
     private val playQueueViewModel: PlayQueueViewModel by activityViewModels()
-    private var currentSong: Song? = null
     private var _binding: FragmentCurrentlyPlayingBinding? = null
     private val binding get() = _binding!!
     private var fastForwarding = false
@@ -76,7 +75,7 @@ class CurrentlyPlayingFragment : Fragment() {
         }
 
         playQueueViewModel.playbackState.observe(viewLifecycleOwner) { state ->
-            if (state == PlaybackStateCompat.STATE_PLAYING) binding.btnPlay.setImageResource(R.drawable.ic_pause)
+            if (state == STATE_PLAYING) binding.btnPlay.setImageResource(R.drawable.ic_pause)
             else binding.btnPlay.setImageResource(R.drawable.ic_play)
         }
 
@@ -172,7 +171,7 @@ class CurrentlyPlayingFragment : Fragment() {
         }
 
         binding.artwork.setOnClickListener {
-            showPopup(binding.currentClose)
+            showPopup()
         }
 
         binding.currentSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -196,5 +195,39 @@ class CurrentlyPlayingFragment : Fragment() {
             Glide.with(mainActivity)
                 .clear(binding.artwork)
         }
+    }
+
+    private fun showPopup() {
+        PopupMenu(this.context, binding.currentClose).apply {
+            inflate(R.menu.currently_playing_menu)
+
+            setForceShowIcon(true)
+
+            setOnMenuItemClickListener { menuItem ->
+                when (menuItem.itemId) {
+                    R.id.search -> {
+                        findNavController().popBackStack()
+                        mainActivity.findNavController(R.id.nav_host_fragment).navigate(R.id.nav_search)
+                    }
+                    R.id.queue -> {
+                        findNavController().popBackStack()
+                        mainActivity.findNavController(R.id.nav_host_fragment).navigate(R.id.nav_queue)
+                    }
+                }
+                true
+            }
+            show()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        mainActivity.hideStatusBars(true)
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+        mainActivity.hideStatusBars(false)
     }
 }

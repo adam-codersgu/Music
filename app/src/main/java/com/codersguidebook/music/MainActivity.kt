@@ -25,7 +25,7 @@ import android.widget.SearchView
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.GravityCompat
+import androidx.core.view.*
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -405,4 +405,56 @@ class MainActivity : AppCompatActivity() {
     fun fastRewind() = mediaController.transportControls.rewind()
 
     fun fastForward() = mediaController.transportControls.fastForward()
+
+    fun hideStatusBars(hide: Boolean) {
+        val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+        if (hide) {
+            supportActionBar?.setDisplayShowTitleEnabled(false)
+            windowInsetsController.systemBarsBehavior =
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            windowInsetsController.hide(WindowInsetsCompat.Type.statusBars())
+
+            // Hide the toolbar to prevent the SearchView keyboard inadvertently popping up
+            binding.toolbar.isGone = true
+        } else {
+            supportActionBar?.setDisplayShowTitleEnabled(true)
+            windowInsetsController.systemBarsBehavior =
+                WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
+            windowInsetsController.show(WindowInsetsCompat.Type.statusBars())
+
+            binding.toolbar.isVisible = true
+        }
+    }
+
+    fun toggleShuffleMode(): Boolean {
+        val newShuffleMode = if (sharedPreferences.getInt("SHUFFLE_MODE", SHUFFLE_MODE_NONE) == SHUFFLE_MODE_NONE) {
+            SHUFFLE_MODE_ALL
+        } else SHUFFLE_MODE_NONE
+
+        setShuffleMode(newShuffleMode)
+
+        return newShuffleMode == SHUFFLE_MODE_ALL
+    }
+
+    fun toggleRepeatMode(): Int {
+        val newRepeatMode = when (sharedPreferences.getInt("REPEAT_MODE", REPEAT_MODE_NONE)) {
+            REPEAT_MODE_NONE -> REPEAT_MODE_ALL
+            REPEAT_MODE_ALL -> REPEAT_MODE_ONE
+            else -> REPEAT_MODE_NONE
+        }
+
+        sharedPreferences.edit().apply {
+            putInt("REPEAT_MODE", newRepeatMode)
+            apply()
+        }
+
+        val bundle = Bundle().apply {
+            putInt("REPEAT_MODE", newRepeatMode)
+        }
+        mediaController.sendCommand("SET_REPEAT_MODE", bundle, null)
+
+        return newRepeatMode
+    }
+
+    fun seekTo(position: Int) = mediaController.transportControls.seekTo(position.toLong())
 }
