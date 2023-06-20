@@ -30,4 +30,6 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     fun updateSong(song: Song) = viewModelScope.launch(Dispatchers.IO) {
         repository.updateSong(song)
     }
+
+    suspend fun getSongById(songId: Long) : Song? = repository.getSongById(songId)
 }

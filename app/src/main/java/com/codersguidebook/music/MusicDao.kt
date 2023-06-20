@@ -18,6 +18,9 @@ interface MusicDao {
     @Query("SELECT * FROM music_table WHERE song_title LIKE :search OR song_artist LIKE :search OR song_album LIKE :search")
     suspend fun getSongsLikeSearch(search: String): List<Song>
 
+    @Query("SELECT * FROM music_library WHERE songId = :songId")
+    suspend fun getSongById(songId: Long): Song?
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(song: Song)
 

@@ -17,4 +17,6 @@ class MusicRepository(private val musicDao: MusicDao) {
     suspend fun updateSong(song: Song){
         musicDao.update(song)
     }
+
+    suspend fun getSongById(songId: Long): Song? = musicDao.getSongById(songId)
 }

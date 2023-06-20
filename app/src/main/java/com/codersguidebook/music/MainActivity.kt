@@ -6,9 +6,11 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.SharedPreferences
+import android.database.Cursor
 import android.graphics.Bitmap
 import android.media.session.PlaybackState
 import android.os.Bundle
+import android.provider.MediaStore
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaDescriptionCompat
 import android.support.v4.media.MediaMetadataCompat
@@ -43,6 +45,7 @@ import com.codersguidebook.music.databinding.ActivityMainBinding
 import com.google.android.material.navigation.NavigationView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 
@@ -362,7 +365,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun playNext(song: Song) {
+    private fun playNext(song: Song) {
         val index = playQueue.indexOfFirst { it.queueId == currentQueueItemId } + 1
 
         val songDesc = buildMediaDescription(song)
@@ -457,4 +460,25 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun seekTo(position: Int) = mediaController.transportControls.seekTo(position.toLong())
+
+    private fun getMediaStoreCursor(selection: String = MediaStore.Audio.Media.IS_MUSIC,
+                                    selectionArgs: Array<String>? = null): Cursor? {
+        val projection = arrayOf(
+            MediaStore.Audio.Media._ID,
+            MediaStore.Audio.Media.TRACK,
+            MediaStore.Audio.Media.TITLE,
+            MediaStore.Audio.Media.ARTIST,
+            MediaStore.Audio.Media.ALBUM,
+            MediaStore.Audio.Media.ALBUM_ID,
+            MediaStore.Audio.Media.YEAR
+        )
+        val sortOrder = MediaStore.Audio.Media.TITLE + " ASC"
+        return contentResolver.query(
+            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+            projection,
+            selection,
+            selectionArgs,
+            sortOrder
+        )
+    }
 }
