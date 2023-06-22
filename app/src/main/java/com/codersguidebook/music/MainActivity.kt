@@ -481,4 +481,39 @@ class MainActivity : AppCompatActivity() {
             sortOrder
         )
     }
+
+    private fun refreshMusicLibrary() = lifecycleScope.launch(Dispatchers.Default) {
+        val songsToAddToMusicLibrary = mutableListOf<Song>()
+
+        getMediaStoreCursor()?.use { cursor ->
+            val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
+            val songIds = mutableListOf<Long>()
+            while (cursor.moveToNext()) {
+                val songId = cursor.getLong(idColumn)
+                songIds.add(songId)
+                val existingSong = musicViewModel.getSongById(songId)
+                if (existingSong == null) {
+                    val song = createSongFromCursor(cursor)
+                    songsToAddToMusicLibrary.add(song)
+                }
+            }
+
+            // TODO: Save the songs and handle deleted songs here
+
+            /* val chunksToAddToMusicLibrary = songsToAddToMusicLibrary.chunked(25)
+            for (chunk in chunksToAddToMusicLibrary) {
+                for (song in chunk) musicViewModel.insertSong(song)
+            }
+
+            val songsToBeDeleted = musicViewModel.allSongs.value?.filterNot {
+                songIds.contains(it.songId)
+            }
+            songsToBeDeleted?.let { songs ->
+                for (song in songs) {
+                    musicViewModel.deleteSong(song)
+                    findSongIdInPlayQueueToRemove(song.songId)
+                }
+            } */
+        }
+    }
 }
