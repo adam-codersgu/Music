@@ -2,10 +2,7 @@ package com.codersguidebook.music
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.content.ComponentName
-import android.content.Context
-import android.content.ContextWrapper
-import android.content.SharedPreferences
+import android.content.*
 import android.database.Cursor
 import android.graphics.Bitmap
 import android.media.session.PlaybackState
@@ -18,6 +15,7 @@ import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat.QueueItem
 import android.support.v4.media.session.PlaybackStateCompat
 import android.support.v4.media.session.PlaybackStateCompat.*
+import android.util.Size
 import android.view.Menu
 import android.view.View
 import android.view.inputmethod.InputMethodManager
@@ -45,8 +43,8 @@ import com.codersguidebook.music.databinding.ActivityMainBinding
 import com.google.android.material.navigation.NavigationView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.FileNotFoundException
 import java.io.FileOutputStream
 
 class MainActivity : AppCompatActivity() {
@@ -483,8 +481,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refreshMusicLibrary() = lifecycleScope.launch(Dispatchers.Default) {
-        val songsToAddToMusicLibrary = mutableListOf<Song>()
-
         getMediaStoreCursor()?.use { cursor ->
             val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
             val songIds = mutableListOf<Long>()
@@ -494,15 +490,8 @@ class MainActivity : AppCompatActivity() {
                 val existingSong = musicViewModel.getSongById(songId)
                 if (existingSong == null) {
                     val song = createSongFromCursor(cursor)
-                    songsToAddToMusicLibrary.add(song)
+                    musicViewModel.insertSong(song)
                 }
-            }
-
-            // TODO: Save the songs and handle deleted songs here
-
-            /* val chunksToAddToMusicLibrary = songsToAddToMusicLibrary.chunked(25)
-            for (chunk in chunksToAddToMusicLibrary) {
-                for (song in chunk) musicViewModel.insertSong(song)
             }
 
             val songsToBeDeleted = musicViewModel.allSongs.value?.filterNot {
@@ -513,7 +502,64 @@ class MainActivity : AppCompatActivity() {
                     musicViewModel.deleteSong(song)
                     findSongIdInPlayQueueToRemove(song.songId)
                 }
-            } */
+            }
         }
+    }
+
+    private fun createSongFromCursor(cursor: Cursor): Song {
+        val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
+        val trackColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TRACK)
+        val titleColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
+        val artistColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
+        val albumColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
+        val albumIDColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID)
+        val yearColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.YEAR)
+
+        val id = cursor.getLong(idColumn)
+        var trackString = cursor.getString(trackColumn) ?: "1001"
+
+        // The Track value will be stored in the format 1xxx where the first digit is the disc number
+        val track = try {
+            when (trackString.length) {
+                4 -> trackString.toInt()
+                in 1..3 -> {
+                    val numberNeeded = 4 - trackString.length
+                    trackString = when (numberNeeded) {
+                        1 -> "1$trackString"
+                        2 -> "10$trackString"
+                        else -> "100$trackString"
+                    }
+                    trackString.toInt()
+                }
+                else -> 1001
+            }
+        } catch (_: NumberFormatException) {
+            // If the Track value is unusual (e.g. you can get stuff like "12/23") then use 1001
+            1001
+        }
+
+        val title = cursor.getString(titleColumn) ?: "Unknown song"
+        val artist = cursor.getString(artistColumn) ?: "Unknown artist"
+        val album = cursor.getString(albumColumn) ?: "Unknown album"
+        val year = cursor.getString(yearColumn) ?: "2000"
+        val albumId = cursor.getString(albumIDColumn) ?: "unknown_album_id"
+        val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id)
+
+        val directory = ContextWrapper(application).getDir("albumArt", Context.MODE_PRIVATE)
+        if (!File(directory, "$albumId.jpg").exists()) {
+            val albumArt = try {
+                contentResolver.loadThumbnail(uri, Size(640, 640), null)
+            } catch (_: FileNotFoundException) { null }
+            albumArt?.let {
+                saveImage(albumId, albumArt)
+            }
+        }
+
+        return Song(id, track, title, artist, album, albumId, year)
+    }
+
+    private fun findSongIdInPlayQueueToRemove(songId: Long) = lifecycleScope.launch(Dispatchers.Default) {
+        val queueItemsToRemove = playQueue.filter { it.description.mediaId == songId.toString() }
+        for (item in queueItemsToRemove) removeQueueItemById(item.queueId)
     }
 }

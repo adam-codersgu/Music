@@ -15,6 +15,5 @@ data class Song(
     @ColumnInfo(name = "song_artist") var artist: String,
     @ColumnInfo(name = "song_album") var album: String,
     @ColumnInfo(name = "song_album_id") val albumId: String,
-    @ColumnInfo(name = "song_uri") val uri: String,
     @ColumnInfo(name = "song_year") var year: String
 ) : Parcelable
