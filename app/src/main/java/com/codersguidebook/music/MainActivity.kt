@@ -1,13 +1,17 @@
 package com.codersguidebook.music
 
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.*
+import android.content.pm.PackageManager
 import android.database.Cursor
 import android.graphics.Bitmap
+import android.media.AudioManager
 import android.media.session.PlaybackState
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
 import android.support.v4.media.MediaBrowserCompat
@@ -27,6 +31,8 @@ import android.widget.SearchView
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.view.*
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.ViewModelProvider
@@ -174,10 +180,29 @@ class MainActivity : AppCompatActivity() {
 
         musicViewModel = ViewModelProvider(this)[MusicViewModel::class.java]
 
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+            refreshMusicLibrary()
+        } else ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), 1)
+
         val handler = Handler(Looper.getMainLooper())
         mediaStoreContentObserver = MediaStoreContentObserver(handler, this).also {
             this.contentResolver.registerContentObserver(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
                 true, it)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        volumeControlStream = AudioManager.STREAM_MUSIC
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+            refreshMusicLibrary()
+        } else {
+            Toast.makeText(this, getString(R.string.permission_required), Toast.LENGTH_LONG).show()
+            finish()
         }
     }
 

@@ -12,9 +12,6 @@ interface MusicDao {
     @Query("SELECT * from music_table ORDER BY song_title")
     fun getSongsOrderByTitle(): LiveData<List<Song>>
 
-    @Query("SELECT * from music_library WHERE song_album_id = :albumId ORDER BY song_track")
-    suspend fun getSongsByAlbumIdOrderByTrack(albumId: String): List<Song>
-
     @Query("SELECT * FROM music_table WHERE song_title LIKE :search OR song_artist LIKE :search OR song_album LIKE :search")
     suspend fun getSongsLikeSearch(search: String): List<Song>
 
