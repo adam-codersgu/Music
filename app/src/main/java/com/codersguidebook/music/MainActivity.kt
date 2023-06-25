@@ -6,7 +6,9 @@ import android.content.*
 import android.database.Cursor
 import android.graphics.Bitmap
 import android.media.session.PlaybackState
+import android.net.Uri
 import android.os.Bundle
+import android.os.Looper
 import android.provider.MediaStore
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaDescriptionCompat
@@ -55,6 +57,7 @@ class MainActivity : AppCompatActivity() {
     private var currentPlaybackPosition = 0
     private var currentPlaybackDuration = 0
     private var currentQueueItemId = -1L
+    private var mediaStoreContentObserver: MediaStoreContentObserver? = null
     private var playQueue = listOf<QueueItem>()
     private val playQueueViewModel: PlayQueueViewModel by viewModels()
     private lateinit var mediaBrowser: MediaBrowserCompat
@@ -170,6 +173,12 @@ class MainActivity : AppCompatActivity() {
         binding.navView.itemIconTintList = null
 
         musicViewModel = ViewModelProvider(this)[MusicViewModel::class.java]
+
+        val handler = Handler(Looper.getMainLooper())
+        mediaStoreContentObserver = MediaStoreContentObserver(handler, this).also {
+            this.contentResolver.registerContentObserver(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                true, it)
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -204,6 +213,10 @@ class MainActivity : AppCompatActivity() {
             unregisterCallback(controllerCallback)
         }
         mediaBrowser.disconnect()
+
+        mediaStoreContentObserver?.let {
+            this.contentResolver.unregisterContentObserver(it)
+        }
     }
 
     private fun createChannelForMediaPlayerNotification() {
@@ -561,5 +574,34 @@ class MainActivity : AppCompatActivity() {
     private fun findSongIdInPlayQueueToRemove(songId: Long) = lifecycleScope.launch(Dispatchers.Default) {
         val queueItemsToRemove = playQueue.filter { it.description.mediaId == songId.toString() }
         for (item in queueItemsToRemove) removeQueueItemById(item.queueId)
+    }
+
+    fun handleChangeToContentUri(uri: Uri) = lifecycleScope.launch(Dispatchers.IO) {
+        val songIdString = uri.toString().removePrefix(
+            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI.toString() + "/")
+        try {
+            val selection = MediaStore.Audio.Media._ID + "=?"
+            val selectionArgs = arrayOf(songIdString)
+            val cursor = getMediaStoreCursor(selection, selectionArgs)
+
+            val songId = songIdString.toLong()
+            val existingSong = musicViewModel.getSongById(songId)
+
+            when {
+                existingSong == null && cursor?.count!! > 0 -> {
+                    cursor.apply {
+                        this.moveToNext()
+                        val createdSong = createSongFromCursor(this)
+                        musicViewModel.insertSong(createdSong)
+                    }
+                }
+                cursor?.count == 0 -> {
+                    existingSong?.let {
+                        musicViewModel.deleteSong(existingSong)
+                        findSongIdInPlayQueueToRemove(songId)
+                    }
+                }
+            }
+        } catch (_: NumberFormatException) { refreshMusicLibrary() }
     }
 }
