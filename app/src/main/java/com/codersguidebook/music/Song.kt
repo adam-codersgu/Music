@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
-@Entity(tableName = "music_table")
+@Entity(tableName = "music_library")
 data class Song(
     @PrimaryKey val songId: Long,
     @ColumnInfo(name = "song_track") var track: Int,

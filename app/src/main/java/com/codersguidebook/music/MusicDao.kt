@@ -9,10 +9,10 @@ interface MusicDao {
     @Delete
     suspend fun delete(song: Song)
 
-    @Query("SELECT * from music_table ORDER BY song_title")
+    @Query("SELECT * from music_library ORDER BY song_title")
     fun getSongsOrderByTitle(): LiveData<List<Song>>
 
-    @Query("SELECT * FROM music_table WHERE song_title LIKE :search OR song_artist LIKE :search OR song_album LIKE :search")
+    @Query("SELECT * FROM music_library WHERE song_title LIKE :search OR song_artist LIKE :search OR song_album LIKE :search")
     suspend fun getSongsLikeSearch(search: String): List<Song>
 
     @Query("SELECT * FROM music_library WHERE songId = :songId")
