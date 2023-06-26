@@ -85,23 +85,16 @@ class PlayQueueAdapter(private val activity: MainActivity, private val fragment:
                         continue
                     }
 
-                    fun queueItemIdsDoNotMatchAtCurrentIndex(): Boolean {
-                        return newPlayQueue.find { it.queueId == playQueue[index].queueId } == null
-                    }
+                    var numberOfItemsRemoved = 0
+                    do {
+                        playQueue.removeAt(index)
+                        ++numberOfItemsRemoved
+                    } while (index < playQueue.size && queueItem.queueId != playQueue[index].queueId)
 
-                    // Check if the queueItem has been removed from the list
-                    if (queueItemIdsDoNotMatchAtCurrentIndex()) {
-                        var numberOfItemsRemoved = 0
-                        do {
-                            playQueue.removeAt(index)
-                            ++numberOfItemsRemoved
-                        } while (index < playQueue.size && queueItemIdsDoNotMatchAtCurrentIndex())
-
-                        when {
-                            numberOfItemsRemoved == 1 -> notifyItemRemoved(index)
-                            numberOfItemsRemoved > 1 -> notifyItemRangeRemoved(index,
-                                numberOfItemsRemoved)
-                        }
+                    when {
+                        numberOfItemsRemoved == 1 -> notifyItemRemoved(index)
+                        numberOfItemsRemoved > 1 -> notifyItemRangeRemoved(index,
+                            numberOfItemsRemoved)
                     }
                 }
                 queueItem.description.title != playQueue[index].description.title ||
