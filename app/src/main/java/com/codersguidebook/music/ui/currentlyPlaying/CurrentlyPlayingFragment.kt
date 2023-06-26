@@ -1,8 +1,6 @@
 package com.codersguidebook.music.ui.currentlyPlaying
 
 import android.annotation.SuppressLint
-import android.widget.PopupMenu
-import android.content.SharedPreferences
 import android.graphics.Color
 import android.os.Bundle
 import android.support.v4.media.MediaMetadataCompat
@@ -11,15 +9,14 @@ import android.transition.TransitionInflater
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.PopupMenu
 import android.widget.SeekBar
-import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.findNavController
-import androidx.preference.PreferenceManager
 import com.bumptech.glide.Glide
 import com.codersguidebook.music.MainActivity
 import com.codersguidebook.music.PlayQueueViewModel
@@ -40,7 +37,6 @@ class CurrentlyPlayingFragment : Fragment() {
     private var fastForwarding = false
     private var fastRewinding = false
     private lateinit var mainActivity: MainActivity
-    private lateinit var sharedPreferences: SharedPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,7 +51,6 @@ class CurrentlyPlayingFragment : Fragment() {
     ): View {
         _binding = FragmentCurrentlyPlayingBinding.inflate(inflater, container, false)
         mainActivity = activity as MainActivity
-        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mainActivity)
         return binding.root
     }
 
@@ -131,7 +126,7 @@ class CurrentlyPlayingFragment : Fragment() {
         val onSurface = MaterialColors.getColor(mainActivity, com.google.android.material.R.attr.colorOnSurface, Color.LTGRAY)
         val onSurface60 = MaterialColors.compositeARGBWithAlpha(onSurface, 153)
 
-        if (sharedPreferences.getBoolean("shuffle", false)) {
+        if (mainActivity.getShuffleMode() == SHUFFLE_MODE_ALL) {
             binding.currentButtonShuffle.setColorFilter(accent)
         }
 
@@ -140,7 +135,7 @@ class CurrentlyPlayingFragment : Fragment() {
             else binding.currentButtonShuffle.setColorFilter(onSurface60)
         }
 
-        when (sharedPreferences.getInt("repeat", REPEAT_MODE_NONE)) {
+        when (mainActivity.getRepeatMode()) {
             REPEAT_MODE_ALL -> binding.currentButtonRepeat.setColorFilter(accent)
             REPEAT_MODE_ONE -> {
                 binding.currentButtonRepeat.setColorFilter(accent)
@@ -151,17 +146,14 @@ class CurrentlyPlayingFragment : Fragment() {
         binding.currentButtonRepeat.setOnClickListener {
             when (mainActivity.toggleRepeatMode()) {
                 REPEAT_MODE_NONE -> {
-                    binding.currentButtonRepeat.setColorFilter(accent)
-                    Toast.makeText(requireActivity(), "Repeat play queue", Toast.LENGTH_SHORT).show()
-                }
-                REPEAT_MODE_ALL -> {
-                    binding.currentButtonRepeat.setImageDrawable(ContextCompat.getDrawable(requireActivity(), R.drawable.ic_repeat_one))
-                    Toast.makeText(requireActivity(), "Repeat current song", Toast.LENGTH_SHORT).show()
-                }
-                REPEAT_MODE_ONE -> {
                     binding.currentButtonRepeat.setImageDrawable(ContextCompat.getDrawable(requireActivity(), R.drawable.ic_repeat))
                     binding.currentButtonRepeat.setColorFilter(onSurface60)
-                    Toast.makeText(requireActivity(), "Repeat mode off", Toast.LENGTH_SHORT).show()
+                }
+                REPEAT_MODE_ALL -> {
+                    binding.currentButtonRepeat.setColorFilter(accent)
+                }
+                REPEAT_MODE_ONE -> {
+                    binding.currentButtonRepeat.setImageDrawable(ContextCompat.getDrawable(requireActivity(), R.drawable.ic_repeat_one))
                 }
             }
         }

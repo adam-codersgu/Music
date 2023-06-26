@@ -3,7 +3,10 @@ package com.codersguidebook.music
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.content.*
+import android.content.ComponentName
+import android.content.ContentUris
+import android.content.Context
+import android.content.ContextWrapper
 import android.content.pm.PackageManager
 import android.database.Cursor
 import android.graphics.Bitmap
@@ -43,7 +46,6 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
-import androidx.preference.PreferenceManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.signature.ObjectKey
@@ -69,7 +71,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var mediaBrowser: MediaBrowserCompat
     private lateinit var musicViewModel: MusicViewModel
     private lateinit var searchView: SearchView
-    private lateinit var sharedPreferences: SharedPreferences
 
     private val connectionCallbacks = object : MediaBrowserCompat.ConnectionCallback() {
         override fun onConnected() {
@@ -149,7 +150,6 @@ class MainActivity : AppCompatActivity() {
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
 
-        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
         mediaBrowser = MediaBrowserCompat(
             this,
             ComponentName(this, MediaPlaybackService::class.java),
@@ -309,11 +309,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setShuffleMode(shuffleMode: Int) {
-        sharedPreferences.edit().apply {
-            putInt("SHUFFLE_MODE", shuffleMode)
-            apply()
-        }
-
         val bundle = Bundle().apply {
             putInt("SHUFFLE_MODE", shuffleMode)
         }
@@ -445,6 +440,16 @@ class MainActivity : AppCompatActivity() {
 
     fun fastForward() = mediaController.transportControls.fastForward()
 
+    fun getShuffleMode(): Int {
+        val mediaControllerCompat = MediaControllerCompat.getMediaController(this@MainActivity)
+        return mediaControllerCompat.shuffleMode
+    }
+
+    fun getRepeatMode(): Int {
+        val mediaControllerCompat = MediaControllerCompat.getMediaController(this@MainActivity)
+        return mediaControllerCompat.repeatMode
+    }
+
     fun hideStatusBars(hide: Boolean) {
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
         if (hide) {
@@ -466,7 +471,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun toggleShuffleMode(): Boolean {
-        val newShuffleMode = if (sharedPreferences.getInt("SHUFFLE_MODE", SHUFFLE_MODE_NONE) == SHUFFLE_MODE_NONE) {
+        val newShuffleMode = if (getShuffleMode() == SHUFFLE_MODE_NONE) {
             SHUFFLE_MODE_ALL
         } else SHUFFLE_MODE_NONE
 
@@ -476,15 +481,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun toggleRepeatMode(): Int {
-        val newRepeatMode = when (sharedPreferences.getInt("REPEAT_MODE", REPEAT_MODE_NONE)) {
+        val newRepeatMode = when (getRepeatMode()) {
             REPEAT_MODE_NONE -> REPEAT_MODE_ALL
             REPEAT_MODE_ALL -> REPEAT_MODE_ONE
             else -> REPEAT_MODE_NONE
-        }
-
-        sharedPreferences.edit().apply {
-            putInt("REPEAT_MODE", newRepeatMode)
-            apply()
         }
 
         val bundle = Bundle().apply {
