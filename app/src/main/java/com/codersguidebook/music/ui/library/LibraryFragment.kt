@@ -13,6 +13,7 @@ import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 
 class LibraryFragment : Fragment() {
+
     private var _binding: FragmentLibraryBinding? = null
     private val binding get() = _binding!!
     private var viewPagerPosition: Int? = null
