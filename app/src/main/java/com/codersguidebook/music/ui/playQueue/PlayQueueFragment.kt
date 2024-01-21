@@ -10,7 +10,9 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.ItemTouchHelper
-import androidx.recyclerview.widget.ItemTouchHelper.*
+import androidx.recyclerview.widget.ItemTouchHelper.ACTION_STATE_DRAG
+import androidx.recyclerview.widget.ItemTouchHelper.DOWN
+import androidx.recyclerview.widget.ItemTouchHelper.UP
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.codersguidebook.music.MainActivity
@@ -19,6 +21,7 @@ import com.codersguidebook.music.R
 import com.codersguidebook.music.databinding.FragmentPlayQueueBinding
 
 class PlayQueueFragment : Fragment() {
+
     private var _binding: FragmentPlayQueueBinding? = null
     private val binding get() = _binding!!
     private val playQueueViewModel: PlayQueueViewModel by activityViewModels()
@@ -26,7 +29,7 @@ class PlayQueueFragment : Fragment() {
     private lateinit var adapter: PlayQueueAdapter
 
     private val itemTouchHelper by lazy {
-        val simpleItemTouchCallback = object : SimpleCallback(UP or DOWN, 0) {
+        val simpleItemTouchCallback = object : ItemTouchHelper.SimpleCallback(UP or DOWN, 0) {
             var to: Int? = null
             var queueItem: QueueItem? = null
 
@@ -42,7 +45,6 @@ class PlayQueueFragment : Fragment() {
                 viewHolder.itemView.alpha = 1.0f
 
                 if (to != null && queueItem != null) {
-                    playQueueViewModel.playQueue.value = adapter.playQueue
                     mainActivity.notifyQueueItemMoved(queueItem!!.queueId, to!!)
                     to = null
                     queueItem = null
