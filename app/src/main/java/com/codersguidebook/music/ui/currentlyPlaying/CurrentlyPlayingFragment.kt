@@ -4,7 +4,11 @@ import android.annotation.SuppressLint
 import android.graphics.Color
 import android.os.Bundle
 import android.support.v4.media.MediaMetadataCompat
-import android.support.v4.media.session.PlaybackStateCompat.*
+import android.support.v4.media.session.PlaybackStateCompat
+import android.support.v4.media.session.PlaybackStateCompat.REPEAT_MODE_ALL
+import android.support.v4.media.session.PlaybackStateCompat.REPEAT_MODE_NONE
+import android.support.v4.media.session.PlaybackStateCompat.REPEAT_MODE_ONE
+import android.support.v4.media.session.PlaybackStateCompat.SHUFFLE_MODE_ALL
 import android.transition.TransitionInflater
 import android.view.LayoutInflater
 import android.view.View
@@ -27,7 +31,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
 class CurrentlyPlayingFragment : Fragment() {
 
@@ -70,7 +74,7 @@ class CurrentlyPlayingFragment : Fragment() {
         }
 
         playQueueViewModel.playbackState.observe(viewLifecycleOwner) { state ->
-            if (state == STATE_PLAYING) binding.btnPlay.setImageResource(R.drawable.ic_pause)
+            if (state == PlaybackStateCompat.STATE_PLAYING) binding.btnPlay.setImageResource(R.drawable.ic_pause)
             else binding.btnPlay.setImageResource(R.drawable.ic_play)
         }
 
@@ -175,7 +179,19 @@ class CurrentlyPlayingFragment : Fragment() {
         })
     }
 
-    private fun updateCurrentlyDisplayedMetadata(metadata: MediaMetadataCompat?) = lifecycleScope.launch(Dispatchers.Main) {
+    override fun onResume() {
+        super.onResume()
+        mainActivity.hideStatusBars(true)
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+        mainActivity.hideStatusBars(false)
+    }
+
+    private fun updateCurrentlyDisplayedMetadata(metadata: MediaMetadataCompat?) = lifecycleScope.launch(
+        Dispatchers.Main) {
         binding.title.text = metadata?.getString(MediaMetadataCompat.METADATA_KEY_TITLE)
         binding.artist.text = metadata?.getString(MediaMetadataCompat.METADATA_KEY_ARTIST)
         binding.album.text = metadata?.getString(MediaMetadataCompat.METADATA_KEY_ALBUM)
@@ -212,14 +228,4 @@ class CurrentlyPlayingFragment : Fragment() {
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        mainActivity.hideStatusBars(true)
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
-        mainActivity.hideStatusBars(false)
-    }
 }
