@@ -1,7 +1,12 @@
 package com.codersguidebook.music
 
 import android.app.PendingIntent
-import android.content.*
+import android.content.BroadcastReceiver
+import android.content.ContentUris
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.AudioAttributes
@@ -9,9 +14,9 @@ import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.AudioManager.*
 import android.media.MediaPlayer
-import android.media.MediaPlayer.*
-import android.media.session.PlaybackState.STATE_NONE
-import android.media.session.PlaybackState.STATE_SKIPPING_TO_NEXT
+import android.media.MediaPlayer.MEDIA_ERROR_IO
+import android.media.MediaPlayer.MEDIA_ERROR_MALFORMED
+import android.media.MediaPlayer.MEDIA_ERROR_UNKNOWN
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -25,16 +30,16 @@ import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.MediaSessionCompat.QueueItem
 import android.support.v4.media.session.PlaybackStateCompat.*
 import android.text.TextUtils
+import androidx.media.MediaBrowserServiceCompat
 import android.view.KeyEvent
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.media.MediaBrowserServiceCompat
 import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
 
-class MediaPlaybackService : MediaBrowserServiceCompat(), OnErrorListener {
+class MediaPlaybackService : MediaBrowserServiceCompat(), MediaPlayer.OnErrorListener {
 
     private val channelId = "music"
     private var currentlyPlayingQueueItemId = -1L
@@ -113,9 +118,9 @@ class MediaPlaybackService : MediaBrowserServiceCompat(), OnErrorListener {
                 mediaPlayer = MediaPlayer().apply {
                     setAudioAttributes(
                         AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_MEDIA)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                        .build()
+                            .setUsage(AudioAttributes.USAGE_MEDIA)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                            .build()
                     )
                     setDataSource(application, currentQueueItemUri)
                     setOnErrorListener(this@MediaPlaybackService)
