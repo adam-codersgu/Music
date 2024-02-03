@@ -126,7 +126,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat(), MediaPlayer.OnErrorLis
                     setOnErrorListener(this@MediaPlaybackService)
                     prepare()
                 }
-                // Refresh the notification and metadata so user can see the song has changed
+                // Refresh the notification and metadata so the user can see the song has changed
                 setCurrentMetadata()
                 refreshNotification()
                 setMediaPlaybackState(STATE_NONE)
