@@ -17,6 +17,7 @@ import android.media.MediaPlayer
 import android.media.MediaPlayer.MEDIA_ERROR_IO
 import android.media.MediaPlayer.MEDIA_ERROR_MALFORMED
 import android.media.MediaPlayer.MEDIA_ERROR_UNKNOWN
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -30,11 +31,11 @@ import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.MediaSessionCompat.QueueItem
 import android.support.v4.media.session.PlaybackStateCompat.*
 import android.text.TextUtils
-import androidx.media.MediaBrowserServiceCompat
 import android.view.KeyEvent
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.media.MediaBrowserServiceCompat
 import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
@@ -71,7 +72,14 @@ class MediaPlaybackService : MediaBrowserServiceCompat(), MediaPlayer.OnErrorLis
 
     private val mediaSessionCallback: MediaSessionCompat.Callback = object : MediaSessionCompat.Callback() {
         override fun onMediaButtonEvent(mediaButtonEvent: Intent?): Boolean {
-            val keyEvent: KeyEvent? = mediaButtonEvent?.getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
+            val keyEvent: KeyEvent? = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                // Pre-SDK 33
+                @Suppress("DEPRECATION")
+                mediaButtonEvent?.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
+            } else {
+                // SDK 33 and up
+                mediaButtonEvent?.getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
+            }
 
             keyEvent?.let { event ->
                 when (event.keyCode) {
