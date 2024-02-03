@@ -13,6 +13,7 @@ import android.graphics.Bitmap
 import android.media.AudioManager
 import android.media.session.PlaybackState
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -194,9 +195,17 @@ class MainActivity : AppCompatActivity() {
 
         musicViewModel = ViewModelProvider(this)[MusicViewModel::class.java]
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+        val permissionToRequest = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            // Pre-SDK 33
+            Manifest.permission.READ_EXTERNAL_STORAGE
+        } else {
+            // SDK 33 and up
+            Manifest.permission.READ_MEDIA_AUDIO
+        }
+
+        if (ContextCompat.checkSelfPermission(this, permissionToRequest) == PackageManager.PERMISSION_GRANTED) {
             refreshMusicLibrary()
-        } else ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), 1)
+        } else ActivityCompat.requestPermissions(this, arrayOf(permissionToRequest), 1)
 
         val handler = Handler(Looper.getMainLooper())
         mediaStoreContentObserver = MediaStoreContentObserver(handler, this).also {
